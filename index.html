@@ -3,9 +3,87 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>universe</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <header>
+        <h1 class="name">ariel kapur</h1>
+        <p class="pixelitalic">
+            my digital home
+        </p>
+    </header>
+    <main>
+
+        <section>
+            <h2 class="subheading">a constellation</h2>
+
+            <a class="pixelitalic" href="#">🌌 theoretical astrophysics</a>
+            <a class="pixelitalic" href="#">🎵 spiritual warfare</a>
+            <a class="pixelitalic" href="#">🧠 upload mind</a>
+            <a class="pixelitalic" href="#">✍️ the word</a>
+
+        </section>
+
+
+        <section>
+            <h2 class="subheading">about me</h2>
+
+            <p class="pixelitalic">
+                i am an actual wizard trying to talk to rocks, these are the rocks you are looking at right now. shiny rocks dude
+            </p>
+
+        </section>
+
+    </main>
+
+    <script>
+    (function fitNameToSeventh(){
+        const el = document.querySelector('.name');
+        if(!el) return;
+
+        function fit(){
+            const containerWidth = Math.floor(window.innerWidth / 7);
+            el.style.width = containerWidth + 'px';
+
+            // binary-search for the largest font-size (px) that fits without wrapping
+            let low = 6, high = 1000, best = 6;
+            while(low <= high){
+                const mid = Math.floor((low + high) / 2);
+                el.style.fontSize = mid + 'px';
+                if(el.scrollWidth <= el.clientWidth){
+                    best = mid;
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            const finalNamePx = Math.max(6, best);
+            el.style.fontSize = finalNamePx + 'px';
+
+            // Now adjust subheadings and pixelitalic paragraphs relative to name size
+            const nameSize = finalNamePx;
+            // subheading: 6/7 of name size, paragraph: 5/7 of name size
+            const subSize = Math.max(10, Math.floor(nameSize * 6 / 7));
+            const paraSize = Math.max(10, Math.floor(nameSize * 5 / 7));
+
+            document.querySelectorAll('.subheading').forEach(h => {
+                h.style.fontSize = subSize + 'px';
+            });
+            document.querySelectorAll('.pixelitalic').forEach(p => {
+                p.style.fontSize = paraSize + 'px';
+            });
+        }
+
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(fit);
+        } else {
+            window.addEventListener('load', fit);
+            setTimeout(fit, 0);
+        }
+        window.addEventListener('resize', fit);
+    })();
+    </script>
 
 </body>
 </html>
