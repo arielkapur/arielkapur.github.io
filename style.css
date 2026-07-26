@@ -1,0 +1,122 @@
+﻿body {
+    background-color: #f9f9f9;
+    color: #111;
+    font-family: Georgia, serif;
+
+    text-align: center;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+h1 {
+    font-size: 4rem;
+    letter-spacing: 5px;
+}
+
+
+section {
+    margin-top: 60px;
+}
+
+
+a {
+    display: block;
+    margin: 15px 0;
+    color: black;
+    text-decoration: none;
+}
+
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+@font-face {
+    font-family: "DeiGrat";
+    src: url("fonts/DeiGrat.ttf");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "vipnagorgialla";
+    src: url("fonts/vipnagorgialla.otf");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "cavalhatriz";
+    src: url("fonts/cavalhatriz.ttf");
+    font-display: swap;
+}
+
+.name {
+    font-family: "DeiGrat", monospace;
+    display: inline-block;
+    /* exact one-seventh of the viewport width */
+    width: calc(100vw / 7);
+    box-sizing: border-box;
+    white-space: nowrap;   /* no line breaks allowed */
+    overflow: visible;
+    text-align: center;
+}
+
+.name:hover {
+    text-shadow:
+        0 0 4px #fff,
+        0 0 8px #bbb,
+        0 0 16px #777,
+        0 0 32px #333;
+    font-family: "DeiGrat", monospace;
+    display: inline-block;
+    /* exact one-seventh of the viewport width */
+    width: calc(100vw / 7);
+    box-sizing: border-box;
+    white-space: nowrap; /* no line breaks allowed */
+    overflow: visible;
+    text-align: center;
+}
+
+/* on small screens let JS / media queries decide if different behavior is needed */
+@media (max-width: 480px) {
+    .name {
+        /* keep it single-line but allow a more reasonable starting size */
+        font-size: 20px;
+    }
+}
+
+/* Subheading and paragraph utility classes using project fonts.
+   Sizes will be adjusted by JS so they never exceed .name's pixel size. */
+.subheading,
+h2.subheading {
+    font-family: "vipnagorgialla", serif !important;
+    line-height: 1;
+    margin: 12px 0;
+    /* script will override to a value <= name size; provide fallback */
+    font-size: 16px !important;
+}
+
+.pixelitalic,
+p.pixelitalic {
+    font-family: "cavalhatriz", monospace !important;
+    font-style: italic !important;
+    line-height: 1.2;
+    margin: 8px 0;
+    font-size: 14px !important;
+}
+
+/* If links or other inline elements should use pixelitalic, allow applying class to them too */
+.pixelitalic-inline {
+    font-family: "cavalhatriz", monospace !important;
+    font-style: italic !important;
+}
+
+/* Center the page content vertically on screen (browser only) */
+@media screen {
+    body {
+        min-height: 95vh; /* ensure body fills viewport height */
+        justify-content: center; /* vertical centering because body is display:flex */
+    }
+}
