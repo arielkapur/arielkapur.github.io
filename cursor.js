@@ -8,7 +8,7 @@ const CURSOR_ID = 'cursor';
         el.id = CURSOR_ID;
         el.setAttribute('aria-hidden', 'true');
         const img = document.createElement('img');
-        img.src = 'images/cursor.webp';
+        img.src = 'images/cursor_max.webp';
         img.alt = '';
         el.appendChild(img);
         document.body.appendChild(el);
@@ -39,8 +39,8 @@ const CURSOR_ID = 'cursor';
             position: 'fixed',
             left: '0px',
             top: '0px',
-            width: cursor.style.width || '32px',
-            height: cursor.style.height || '32px',
+            width: cursor.style.width || '16px',
+            height: cursor.style.height || '16px',
             pointerEvents: 'none',
             transform: 'translate(-50%, -50%) rotate(0deg)',
             zIndex: '9999',

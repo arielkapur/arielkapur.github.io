@@ -32,15 +32,21 @@
 
     /* Ensure the image fills the container */
     #cursor img {
-        width: 90%;
-        height: 110%;
+        width: 99%;
+        height: 101%;
         display: block;
         object-fit: contain;
     }
 
     /* expanded state for interactive elements */
     #cursor.cursor-active {
-        transform: translate(-50%, -50%) scale(1.35) rotate(0deg);
+        transform: translate(-50%, -50%) scale(1.35) rotate(90deg);
+    }
+
+    /* Prevent browser from showing its own pointer/hand over interactive elements */
+    a, a:link, a:visited, a:hover, a:active,
+    button, input, textarea, select, label {
+        cursor: none !important;
     }
 }
 
@@ -63,9 +69,10 @@ a {
 }
 
 
-    a:hover {
-        text-decoration: underline;
-    }
+/* remove underline globally (including hover/focus) for a cleaner look */
+a, a:link, a:visited, a:hover, a:focus, a:active {
+    text-decoration: none !important;
+}
 
 @font-face {
     font-family: "DeiGrat";
@@ -75,7 +82,7 @@ a {
 
 @font-face {
     font-family: "vipnagorgialla";
-    src: url("fonts/vipnagorgialla.otf");
+    src: url("fonts/dos.ttf");
     font-display: swap;
 }
 
@@ -95,24 +102,22 @@ a {
     overflow: visible;
     text-align: center;
 
-    transition: text-shadow 0.7s ease-in-out;
+    /* make glow transitions faster and hint the browser to optimize */
+    transition: text-shadow 160ms ease, transform 160ms ease;
+    will-change: text-shadow, transform;
+    transform: translateZ(0); /* promote to its own layer to reduce jank */
 }
 
 .name:hover {
-    text-shadow:
-        0 0 4px #fff,
-        0 0 8px #ccc,
-        0 0 16px #999,
-        0 0 32px #666,
-        0 0 64px #333,
-        0 0 128px #000;
+    /* simplified glow (fewer layers) to reduce repaints and improve performance */
+    text-shadow: 0 0 14px rgba(0,0,0,0.45), 0 0 6px rgba(255,255,255,0.85);
+    transform: translateZ(0) scale(1.01);
 
     font-family: "DeiGrat", monospace;
     display: inline-block;
-    /* exact one-seventh of the viewport width */
     width: calc(100vw / 7);
     box-sizing: border-box;
-    white-space: nowrap; /* no line breaks allowed */
+    white-space: nowrap;
     overflow: visible;
     text-align: center;
 }
@@ -133,16 +138,15 @@ h2.subheading {
     line-height: 1;
     margin: 12px 0;
     /* script will override to a value <= name size; provide fallback */
-    font-size: 16px !important;
+    font-size: 20px !important;
 }
 
 .pixelitalic,
 p.pixelitalic {
     font-family: "cavalhatriz", monospace !important;
-    font-style: italic !important;
     line-height: 1.2;
     margin: 8px 0;
-    font-size: 14px !important;
+    font-size: 15px !important;
 }
 
 /* If links or other inline elements should use pixelitalic, allow applying class to them too */
