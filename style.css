@@ -4,12 +4,45 @@
     font-family: Georgia, serif;
 
     text-align: center;
-    
+
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
+/* Custom cursor: hidden by default until JS enables it */
+@media (pointer: fine) and (hover: hover) {
+    body { cursor: none; }
+
+    /* Position the container fixed to the viewport */
+    #cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 16px;
+        height: 16px;
+        pointer-events: none; /* Prevents the element from blocking clicks */
+        transform: translate(-50%, -50%); /* Centers the image on the mouse tip */
+        z-index: 9999; /* Keeps cursor above everything else */
+        opacity: 0;
+        visibility: hidden;
+        transition: transform 120ms linear, opacity 120ms linear, visibility 120ms linear;
+        will-change: transform, opacity;
+    }
+
+    /* Ensure the image fills the container */
+    #cursor img {
+        width: 90%;
+        height: 110%;
+        display: block;
+        object-fit: contain;
+    }
+
+    /* expanded state for interactive elements */
+    #cursor.cursor-active {
+        transform: translate(-50%, -50%) scale(1.35) rotate(0deg);
+    }
+}
 
 h1 {
     font-size: 4rem;
