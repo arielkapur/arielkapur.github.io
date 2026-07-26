@@ -61,14 +61,19 @@ a {
     white-space: nowrap;   /* no line breaks allowed */
     overflow: visible;
     text-align: center;
+
+    transition: text-shadow 0.7s ease-in-out;
 }
 
 .name:hover {
     text-shadow:
         0 0 4px #fff,
-        0 0 8px #bbb,
-        0 0 16px #777,
-        0 0 32px #333;
+        0 0 8px #ccc,
+        0 0 16px #999,
+        0 0 32px #666,
+        0 0 64px #333,
+        0 0 128px #000;
+
     font-family: "DeiGrat", monospace;
     display: inline-block;
     /* exact one-seventh of the viewport width */
