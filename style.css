@@ -52,7 +52,7 @@
 
 h1 {
     font-size: 4rem;
-    letter-spacing: 5px;
+    letter-spacing: 0px;
 }
 
 
@@ -160,5 +160,55 @@ p.pixelitalic {
     body {
         min-height: 95vh; /* ensure body fills viewport height */
         justify-content: center; /* vertical centering because body is display:flex */
+    }
+}
+
+/* Link reveal highlight: black sweep left->right and text fades to white */
+.reveal-highlight {
+    position: relative;
+    /* size to the text so the highlight starts at the text/padding only */
+    display: inline-block;
+    padding: 2px 8px; /* reduced vertical padding -> thinner highlight */
+    margin: 0; /* anchors provide vertical spacing */
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 2px;
+}
+.reveal-highlight span {
+    position: relative;
+    z-index: 2; /* text above the highlight */
+    display: inline-block;
+    transition: color 260ms ease;
+    color: inherit;
+}
+.reveal-highlight::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: #080808;
+    border-radius: 2px;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 300ms cubic-bezier(0.2,0.9,0.2,1);
+    z-index: 1; /* sits under the text span */
+}
+.reveal-highlight:hover::before,
+.reveal-highlight:focus::before {
+    transform: scaleX(1);
+}
+.reveal-highlight:hover span,
+.reveal-highlight:focus span {
+    color: #f8f8f8;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .reveal-highlight::before,
+    .reveal-highlight span {
+        transition: none !important;
+        transform: none !important;
     }
 }
