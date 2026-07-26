@@ -57,6 +57,21 @@ const CURSOR_ID = 'cursor';
             el.addEventListener('mouseleave', ()=> cursor.classList.remove('cursor-active'));
         });
 
+        // Make cursor turn stark white when hovering reveal-highlight elements
+        function bindRevealHighlightListeners(){
+            const nodes = document.querySelectorAll('.reveal-highlight');
+            nodes.forEach(n=>{
+                n.addEventListener('mouseenter', ()=> cursor.classList.add('cursor-white'));
+                n.addEventListener('mouseleave', ()=> cursor.classList.remove('cursor-white'));
+                n.addEventListener('focus', ()=> cursor.classList.add('cursor-white'));
+                n.addEventListener('blur', ()=> cursor.classList.remove('cursor-white'));
+            });
+        }
+        // initial bind and mutation observer for dynamic content
+        bindRevealHighlightListeners();
+        const mo = new MutationObserver(bindRevealHighlightListeners);
+        mo.observe(document.body, { childList: true, subtree: true });
+
         let mouseX = window.innerWidth/2, mouseY = window.innerHeight/2;
         let curX = mouseX, curY = mouseY;
         let rotation = 0;

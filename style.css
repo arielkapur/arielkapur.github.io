@@ -38,6 +38,11 @@
         object-fit: contain;
     }
 
+    /* When hovering reveal-highlight, make the cursor image stark white */
+    #cursor.cursor-white img {
+        filter: invert(1) brightness(2) saturate(0);
+    }
+
     /* expanded state for interactive elements */
     #cursor.cursor-active {
         transform: translate(-50%, -50%) scale(1.35) rotate(90deg);
@@ -52,7 +57,7 @@
 
 h1 {
     font-size: 4rem;
-    letter-spacing: 0px;
+    letter-spacing: 5px;
 }
 
 
@@ -63,7 +68,7 @@ section {
 
 a {
     display: block;
-    margin: 15px 0;
+    margin: 8px 0;
     color: black;
     text-decoration: none;
 }
@@ -173,11 +178,8 @@ p.pixelitalic {
     overflow: hidden;
     -webkit-tap-highlight-color: transparent;
     border-radius: 2px;
-}
-.reveal-highlight span {
-    position: relative;
-    z-index: 2; /* text above the highlight */
-    display: inline-block;
+    /* ensure the text stays above the pseudo-element */
+    z-index: 2;
     transition: color 260ms ease;
     color: inherit;
 }
@@ -193,21 +195,21 @@ p.pixelitalic {
     transform-origin: left center;
     transform: scaleX(0);
     transition: transform 300ms cubic-bezier(0.2,0.9,0.2,1);
-    z-index: 1; /* sits under the text span */
+    z-index: -10; /* sits under the text */
 }
 .reveal-highlight:hover::before,
 .reveal-highlight:focus::before {
     transform: scaleX(1);
 }
-.reveal-highlight:hover span,
-.reveal-highlight:focus span {
+.reveal-highlight:hover,
+.reveal-highlight:focus {
     color: #f8f8f8;
 }
 
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
     .reveal-highlight::before,
-    .reveal-highlight span {
+    .reveal-highlight {
         transition: none !important;
         transform: none !important;
     }
