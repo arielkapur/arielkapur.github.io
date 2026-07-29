@@ -1,16 +1,18 @@
 ﻿<!DOCTYPE html>
 
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" class="no-js">
 <head>
     <meta charset="utf-8" />
     <title>universe</title>
+    <script>document.documentElement.classList.replace('no-js', 'js');</script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="transitions.css">
     <link rel="icon" type="image/png" href="images/favicon.png">
 </head>
 <body>
     <!-- cursor element removed to avoid FOUC; cursor.js will create it dynamically -->
-    <header>
-        <h1 class="name"> 
+    <header data-transition="text">
+        <h1 class="name">
             <a href="https://www.instagram.com/arielkapur/">ariel kapur</a>
         </h1>
         <p class="pixelitalic">
@@ -19,18 +21,18 @@
     </header>
     <main>
 
-        <section>
+        <section data-transition="text">
             <h2 class="subheading">a constellation</h2>
 
             <a class="pixelitalic" href="#"><span class="reveal-highlight">🌌 theoretical astrophysics</span></a>
-            <a class="pixelitalic" href="#"><span class="reveal-highlight">🎵 spiritual warfare</span></a>
+            <a class="pixelitalic" href="music.html"><span class="reveal-highlight">🎵 spiritual warfare</span></a>
             <a class="pixelitalic" href="#"><span class="reveal-highlight">🧠 upload mind</span></a>
             <a class="pixelitalic" href="#"><span class="reveal-highlight">✍️ the word</span></a>
 
         </section>
 
 
-        <section>
+        <section data-transition="text">
             <h2 class="subheading">about me</h2>
 
             <p class="pixelitalic">
@@ -90,6 +92,7 @@
     </script>
 
     <script src="cursor.js"></script>
+    <script src="transitions.js"></script>
 
 </body>
 </html>

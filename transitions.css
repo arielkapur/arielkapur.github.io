@@ -1,0 +1,53 @@
+/* ---------------------------------------------------------
+   transitions.css
+   Shared page-transition mechanism, included on every page.
+   Works together with transitions.js:
+     - html.no-js  -> no JS ran, page is just visible (fallback)
+     - html.js     -> body starts hidden, JS reveals it
+     - body.page-loaded -> body fades in on arrival
+     - body.page-exit   -> body fades out just before navigating away
+   Individual pages add their own rules for [data-transition="block"]
+   and [data-transition="text"] to stage elements within the page.
+--------------------------------------------------------- */
+
+html.no-js body {
+    opacity: 1;
+}
+
+html.js body {
+    opacity: 0;
+    transition: opacity 380ms ease;
+}
+
+html.js body.page-loaded {
+    opacity: 1;
+}
+
+html.js body.page-exit {
+    opacity: 0 !important;
+}
+
+/* generic "text" stage: any page can mark elements with this to have them
+   settle in shortly after the body itself has faded in */
+[data-transition="text"] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 520ms ease, transform 520ms ease;
+}
+body.text-in [data-transition="text"] {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.js body {
+        transition: none !important;
+        opacity: 1 !important;
+    }
+    [data-transition="block"],
+    [data-transition="text"] {
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

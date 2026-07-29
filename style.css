@@ -97,6 +97,10 @@ a, a:link, a:visited, a:hover, a:focus, a:active {
     font-display: swap;
 }
 
+.sidebar {
+    font-size: 2rem;
+}
+
 .name {
     font-family: "DeiGrat", monospace;
     display: inline-block;

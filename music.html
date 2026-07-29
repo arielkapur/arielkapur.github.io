@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+    <meta charset="utf-8" />
+    <title>music</title>
+    <script>document.documentElement.classList.replace('no-js', 'js');</script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="transitions.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <style>
+        /* ---------------------------------------------------------
+           music.html — page-specific layout
+           Reuses the site's 1/7 grid logic (see .name in style.css)
+           but applies it to the whole page: a 1/7-width sidebar
+           and a 1/7-height header, rather than a single element.
+        --------------------------------------------------------- */
+
+        body.music-page {
+            display: block; /* override the flex/centering from style.css */
+            min-height: 100vh;
+            text-align: left;
+            cursor: none;
+        }
+
+        #layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 100vw;
+        }
+
+        /* ---------- header : full width, 1/7 of page height ---------- */
+        .warfare-header {
+            height: calc(100vh / 7);
+            min-height: 90px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .warfare-title {
+            font-family: "cavalhatriz", monospace;
+            text-align: center;
+            white-space: nowrap;
+            margin: 0;
+            font-size: 22px;
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* ---------- body row: sidebar + project section, beneath header ---------- */
+        .body-row {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            min-height: 0; /* allow child overflow scrolling to work inside a flex item */
+        }
+
+        /* ---------- sidebar : 1/7 of page width, scrolls independently ---------- */
+        .sidebar {
+            width: calc(100vw / 7);
+            min-width: 120px;
+            box-sizing: border-box;
+            padding: 24px 12px;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+            .sidebar ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+            }
+
+            .sidebar li a {
+                display: inline-block;
+                font-size: 14px;
+            }
+
+                .sidebar li a.placeholder {
+                    opacity: 0.35;
+                    pointer-events: none;
+                }
+
+        /* ---------- project section : 6/7 of page width, white ---------- */
+        .content {
+            width: calc(100vw * 6 / 7);
+            box-sizing: border-box;
+            background-color: #fcfcfc;
+            overflow-y: auto;
+        }
+
+        main {
+            padding: 48px calc(100vw / 14);
+            box-sizing: border-box;
+        }
+
+        /* text content keeps a readable measure; the player breaks out of it below */
+        .project-text {
+            max-width: 720px;
+        }
+
+        /* ---------- inline audio player: spans the full section width ---------- */
+        .player-wrap {
+            margin-bottom: 40px;
+        }
+
+            .player-wrap audio {
+                width: 100%;
+                filter: grayscale(1) contrast(1.05);
+            }
+
+        .project h2.subheading {
+            text-align: left;
+            margin: 0 0 28px 0;
+        }
+
+        /* ---------- screenshots ---------- */
+        .gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+            .gallery img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+
+        .writing {
+            text-align: left;
+            line-height: 1.6;
+        }
+
+            .writing.pixelitalic {
+                font-size: 15px !important;
+            }
+
+        /* ---------- small screens: stack sidebar above content ---------- */
+        @media (max-width: 640px) {
+            .body-row {
+                flex-direction: column;
+            }
+
+            .sidebar,
+            .content {
+                width: 100%;
+            }
+        }
+
+        /* ---------- staged entrance: white block floats in, then its text ---------- */
+        [data-transition="block"] {
+            opacity: 0;
+            transform: translateY(46px) scale(0.965);
+            transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body.content-in [data-transition="block"] {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    </style>
+</head>
+<body class="music-page">
+
+    <div id="layout">
+
+        <header class="warfare-header">
+            <h1 class="warfare-title">spiritual warfare</h1>
+        </header>
+
+        <div class="body-row">
+
+            <nav class="sidebar">
+                <ul>
+                    <li><a href="index.html" class="pixelitalic reveal-highlight">landing page</a></li>
+                    <!-- each project gets one entry here; the first is live, the rest are placeholders for now -->
+                    <li><a href="#yantra" class="pixelitalic reveal-highlight">yantra</a></li>
+                    <li><a href="#" class="pixelitalic placeholder">project two</a></li>
+                    <li><a href="#" class="pixelitalic placeholder">project three</a></li>
+                </ul>
+            </nav>
+
+            <div class="content" data-transition="block">
+                <main>
+                    <section id="yantra" class="project">
+
+                        <div class="player-wrap" data-transition="text">
+                            <audio controls preload="none">
+                                <source src="audio/yantra.mp3" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+
+                        <div class="project-text" data-transition="text">
+                            <h2 class="subheading">yantra</h2>
+
+                            <div class="gallery">
+                                <!-- replace these with the real screenshots once uploaded -->
+                                <img src="images/yantra-1.jpg" alt="yantra screenshot 1">
+                                <img src="images/yantra-2.jpg" alt="yantra screenshot 2">
+                            </div>
+
+                            <div class="writing pixelitalic">
+                                <!-- write the yantra project description here -->
+                            </div>
+                        </div>
+
+                    </section>
+                </main>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="cursor.js"></script>
+    <script src="transitions.js"></script>
+
+</body>
+</html>
