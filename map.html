@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Orbital Map — Heliocentric</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000;
+    --sun:#f2b545;
+    --earth:#4fd1ff;
+    --dim:#5a6570;
+    --text:#c9d3da;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);overflow:hidden;height:100%;width:100%;}
+  #scene{position:fixed;inset:0;}
+  body, .hud{font-family:'JetBrains Mono', monospace;}
+
+  .hud{
+    position:fixed;
+    color:var(--text);
+    font-size:11px;
+    letter-spacing:0.03em;
+    pointer-events:none;
+    user-select:none;
+  }
+
+  #panel{
+    top:24px; left:24px;
+    pointer-events:auto;
+    display:flex; flex-direction:column; gap:6px;
+    min-width:230px;
+  }
+  #panel .title{
+    color:var(--text); opacity:0.55; font-size:10px;
+    letter-spacing:0.18em; text-transform:uppercase; margin-bottom:8px;
+  }
+  .row{display:flex; justify-content:space-between; gap:16px; border-bottom:1px solid rgba(255,255,255,0.06); padding:4px 0;}
+  .row .k{opacity:0.5;}
+  .row .v{color:var(--earth); font-weight:500;}
+  .row .v.sun{color:var(--sun);}
+
+  #speedRow{display:flex; align-items:center; gap:10px; margin-top:10px; pointer-events:auto;}
+  #speedRow input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:130px; height:1px; background:rgba(255,255,255,0.25); outline:none;
+  }
+  #speedRow input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:9px; height:9px; border-radius:50%;
+    background:var(--earth); cursor:pointer;
+  }
+  #playPause{
+    background:none; border:1px solid rgba(255,255,255,0.2); color:var(--text);
+    font-family:inherit; font-size:10px; letter-spacing:0.08em; padding:4px 9px;
+    cursor:pointer; pointer-events:auto;
+  }
+  #playPause:hover{border-color:var(--earth); color:var(--earth);}
+
+  #legend{
+    bottom:24px; left:24px; max-width:340px; opacity:0.6; line-height:1.6; font-size:10px;
+  }
+  #legend b{color:var(--dim); font-weight:500;}
+
+  #origin{
+    top:24px; right:28px; text-align:right; opacity:0.4; font-size:10px; letter-spacing:0.1em;
+  }
+</style>
+</head>
+<body>
+
+<div id="scene"></div>
+
+<div class="hud" id="panel">
+  <div class="title">Heliocentric — Two-Body</div>
+  <div class="row"><span class="k">sim time</span><span class="v" id="simTime">0.000 yr</span></div>
+  <div class="row"><span class="k">earth distance</span><span class="v" id="earthDist">1.000 AU</span></div>
+  <div class="row"><span class="k">earth velocity</span><span class="v" id="earthVel">29.78 km/s</span></div>
+  <div class="row"><span class="k">sun mass</span><span class="v sun">1.000 M☉</span></div>
+  <div id="speedRow">
+    <button id="playPause">PAUSE</button>
+    <input type="range" id="speedSlider" min="0" max="4" step="0.01" value="1">
+    <span id="speedLabel" style="opacity:0.5;">1.00×</span>
+  </div>
+</div>
+
+<div class="hud" id="origin">SOL-CENTRIC · LOG₁₀ RADIAL SCALE</div>
+
+<div class="hud" id="legend">
+  <b>scale —</b> radius on screen = 50 · (log₁₀(AU) + 1).<br>
+  1 AU → 50px · 10 AU → 100px · 100 AU → 150px, extending<br>
+  by 50px per decade. Body sizes are illustrative, not to scale.
+</div>
+
+<script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ---------- constants ----------
+const AU_YEAR_TO_KMS = 4.74057;      // 1 AU/year in km/s
+const GM_SUN = 4 * Math.PI * Math.PI; // in AU^3 / year^2 (Gaussian units)
+const PX_PER_DECADE = 50;             // screen units per decade of AU
+
+function screenRadius(auDist){
+  const d = Math.max(auDist, 1e-6);
+  return PX_PER_DECADE * (Math.log10(d) + 1);
+}
+
+// ---------- renderer / scene ----------
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 5000);
+camera.position.set(140, 160, 220);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 20;
+controls.maxDistance = 1600;
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------- starfield ----------
+{
+  const starGeo = new THREE.BufferGeometry();
+  const N = 2200;
+  const pos = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const r = 900 + Math.random()*1400;
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.acos(2*Math.random()-1);
+    pos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
+    pos[i*3+1] = r*Math.cos(phi);
+    pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const starMat = new THREE.PointsMaterial({ color:0x556270, size:1.1, sizeAttenuation:true });
+  scene.add(new THREE.Points(starGeo, starMat));
+}
+
+// ---------- text sprite helper ----------
+function makeTextSprite(text, color='#c9d3da', size=64){
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 512; canvas.height = 128;
+  ctx.font = `500 ${size}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.fillText(text, 8, 64);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  const mat = new THREE.SpriteMaterial({ map:tex, transparent:true, depthWrite:false });
+  const sprite = new THREE.Sprite(mat);
+  const scale = 22;
+  sprite.scale.set(scale, scale*(canvas.height/canvas.width), 1);
+  return { sprite, ctx, canvas, tex };
+}
+
+// ---------- log-scale reference rings ----------
+const ringGroup = new THREE.Group();
+[1, 10, 100].forEach((au, i) => {
+  const r = screenRadius(au);
+  const pts = [];
+  const SEG = 128;
+  for(let s=0; s<=SEG; s++){
+    const a = (s/SEG)*Math.PI*2;
+    pts.push(new THREE.Vector3(r*Math.cos(a), 0, r*Math.sin(a)));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({ color:0x2a323a, transparent:true, opacity:0.5 });
+  ringGroup.add(new THREE.Line(geo, mat));
+
+  const label = makeTextSprite(`${au} AU`, '#3d454e', 60);
+  label.sprite.position.set(r, 0, 0);
+  ringGroup.add(label.sprite);
+});
+scene.add(ringGroup);
+
+// ---------- Sun ----------
+const sunGeo = new THREE.IcosahedronGeometry(8, 1);
+const sunMat = new THREE.MeshBasicMaterial({ color:0xf2b545, wireframe:true });
+const sun = new THREE.Mesh(sunGeo, sunMat);
+scene.add(sun);
+const sunLabel = makeTextSprite('SOL', '#f2b545', 60);
+sunLabel.sprite.position.set(0, 14, 0);
+scene.add(sunLabel.sprite);
+
+// ---------- Earth ----------
+const earthGeo = new THREE.IcosahedronGeometry(3, 1);
+const earthMat = new THREE.MeshBasicMaterial({ color:0x4fd1ff, wireframe:true });
+const earth = new THREE.Mesh(earthGeo, earthMat);
+scene.add(earth);
+
+const velLabel = makeTextSprite('29.78 km/s', '#4fd1ff', 60);
+scene.add(velLabel.sprite);
+
+// ---------- trailing gradient orbit ----------
+const TRAIL_LEN = 260;
+const trailPositions = new Float32Array(TRAIL_LEN * 3);
+const trailAlphas = new Float32Array(TRAIL_LEN);
+const trailPoints = []; // buffer of THREE.Vector3, oldest at index 0
+
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+trailGeo.setAttribute('aAlpha', new THREE.BufferAttribute(trailAlphas, 1));
+
+const trailMat = new THREE.ShaderMaterial({
+  uniforms: { uColor: { value: new THREE.Color(0x4fd1ff) } },
+  vertexShader: `
+    attribute float aAlpha;
+    varying float vAlpha;
+    void main(){
+      vAlpha = aAlpha;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uColor;
+    varying float vAlpha;
+    void main(){
+      gl_FragColor = vec4(uColor, vAlpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false
+});
+const trailLine = new THREE.Line(trailGeo, trailMat);
+scene.add(trailLine);
+
+// ---------- physics state (AU, years) ----------
+let pos = new THREE.Vector2(1, 0);
+let vel = new THREE.Vector2(0, 2 * Math.PI); // circular orbit at 1 AU
+let simTime = 0;
+
+function accel(p){
+  const r = p.length();
+  const f = -GM_SUN / (r*r*r);
+  return new THREE.Vector2(p.x*f, p.y*f);
+}
+
+function stepPhysics(dt){
+  const a0 = accel(pos);
+  pos = pos.clone().add(vel.clone().multiplyScalar(dt)).add(a0.clone().multiplyScalar(0.5*dt*dt));
+  const a1 = accel(pos);
+  vel = vel.clone().add(a0.add(a1).multiplyScalar(0.5*dt));
+  simTime += dt;
+}
+
+// ---------- UI wiring ----------
+let running = true;
+let speed = 1;
+document.getElementById('playPause').addEventListener('click', (e) => {
+  running = !running;
+  e.target.textContent = running ? 'PAUSE' : 'PLAY';
+});
+document.getElementById('speedSlider').addEventListener('input', (e) => {
+  speed = parseFloat(e.target.value);
+  document.getElementById('speedLabel').textContent = speed.toFixed(2) + '×';
+});
+
+const elSimTime = document.getElementById('simTime');
+const elEarthDist = document.getElementById('earthDist');
+const elEarthVel = document.getElementById('earthVel');
+
+// ---------- main loop ----------
+const SUBSTEPS = 12;
+const BASE_DT = 0.0025; // years per substep at 1x speed
+let hudCounter = 0;
+
+function animate(){
+  requestAnimationFrame(animate);
+
+  if(running){
+    for(let i=0;i<SUBSTEPS;i++){
+      stepPhysics(BASE_DT * speed);
+    }
+  }
+
+  const distAU = pos.length();
+  const speedAUyr = vel.length();
+  const angle = Math.atan2(pos.y, pos.x);
+  const rScreen = screenRadius(distAU);
+  const worldX = rScreen * Math.cos(angle);
+  const worldZ = rScreen * Math.sin(angle);
+
+  earth.position.set(worldX, 0, worldZ);
+  earth.rotation.y += 0.01;
+  earth.rotation.x += 0.004;
+  sun.rotation.y += 0.0015;
+
+  velLabel.sprite.position.set(worldX, 8, worldZ);
+
+  // update trail
+  trailPoints.push(new THREE.Vector3(worldX, 0, worldZ));
+  if(trailPoints.length > TRAIL_LEN) trailPoints.shift();
+  for(let i=0;i<TRAIL_LEN;i++){
+    if(i < trailPoints.length){
+      const p = trailPoints[i];
+      trailPositions[i*3] = p.x;
+      trailPositions[i*3+1] = p.y;
+      trailPositions[i*3+2] = p.z;
+      trailAlphas[i] = (i / Math.max(trailPoints.length-1,1)) * 0.85;
+    } else {
+      trailPositions[i*3] = trailPositions[i*3+1] = trailPositions[i*3+2] = 0;
+      trailAlphas[i] = 0;
+    }
+  }
+  trailGeo.attributes.position.needsUpdate = true;
+  trailGeo.attributes.aAlpha.needsUpdate = true;
+  trailGeo.setDrawRange(0, trailPoints.length);
+
+  // throttled HUD text updates
+  hudCounter++;
+  if(hudCounter % 6 === 0){
+    elSimTime.textContent = simTime.toFixed(3) + ' yr';
+    elEarthDist.textContent = distAU.toFixed(3) + ' AU';
+    const kms = speedAUyr * AU_YEAR_TO_KMS;
+    elEarthVel.textContent = kms.toFixed(2) + ' km/s';
+
+    const ctx = velLabel.ctx;
+    ctx.clearRect(0,0,velLabel.canvas.width, velLabel.canvas.height);
+    ctx.font = `500 60px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = '#4fd1ff';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(kms.toFixed(2) + ' km/s', 8, 64);
+    velLabel.tex.needsUpdate = true;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
