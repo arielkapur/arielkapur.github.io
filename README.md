@@ -1,4 +1,4 @@
-### Web container for universe simulation
+### Web container for project 9ly (map.html)
 
 Currently using Kepler equations to model orbits without any links to neural net component (ark-neural-net). 
 
@@ -13,7 +13,7 @@ graph TD
   B --> D[Mathematical Metric + Spatial Data Structure]
 ```
 
-# map plan 17/08/26
+# 9ly version 17/08/26 19:20
 
 ## Understanding
 Transform map.html from a 2D orbital plane simulat with procedural starfield into an accurate 3D heliocentric system using real ephemeris data from SIMBAD. Remove Rigel, build out the Solar System (Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune) and nearby stars (9 light-years list) with true 3D positions, scales, and orbital/axial tilts. Eliminate Math.random() and replace with deterministic ephemeris data.
