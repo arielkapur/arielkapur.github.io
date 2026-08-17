@@ -3,354 +3,512 @@
 <head>
 <meta charset="UTF-8">
 <title>Orbital Map — Heliocentric</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#000000;
-    --sun:#f2b545;
-    --earth:#4fd1ff;
-    --dim:#5a6570;
-    --text:#c9d3da;
+  :root {
+    --ui: #00ff00;
+    --white: #ffffff;
+    --dim: #163016;
+    --bg: #000000;
   }
-  html,body{margin:0;padding:0;background:var(--bg);overflow:hidden;height:100%;width:100%;}
-  #scene{position:fixed;inset:0;}
-  body, .hud{font-family:'JetBrains Mono', monospace;}
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: var(--bg);
+    font-family: 'Courier New', Consolas, monospace;
+    color: var(--ui);
+  }
+  canvas { display: block; }
 
-  .hud{
-    position:fixed;
-    color:var(--text);
-    font-size:11px;
-    letter-spacing:0.03em;
-    pointer-events:none;
-    user-select:none;
+  #hud {
+    position: fixed; top: 16px; left: 16px;
+    font-size: 12px; letter-spacing: 0.5px;
+    line-height: 1.6;
+    text-transform: uppercase;
+    pointer-events: none;
+    color: var(--ui);
+    text-shadow: 0 0 6px rgba(0,255,0,0.45);
+    max-width: 300px;
+  }
+  #hud .label { color: #0a6e0a; }
+  #hud .val { color: var(--ui); }
+  #hud .row { margin-bottom: 2px; }
+  #hud .sec { margin-top: 10px; padding-top: 6px; border-top: 1px solid #0a3a0a; }
+
+  #title {
+    position: fixed; top: 16px; right: 16px;
+    text-align: right;
+    font-size: 11px;
+    color: #0a6e0a;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  #title .main { color: var(--ui); font-size: 13px; display:block; margin-bottom:4px; }
+
+  #controls {
+    position: fixed; bottom: 16px; left: 16px;
+    font-size: 11px; color: #0a6e0a;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    max-width: 90vw;
+  }
+  #controls input[type=range] {
+    width: 120px; accent-color: var(--ui);
+    background: transparent;
+  }
+  #controls button, #focus button {
+    background: transparent; color: var(--ui);
+    border: 1px solid #0a6e0a; padding: 4px 9px;
+    font-family: inherit; font-size: 11px; letter-spacing: 0.5px;
+    cursor: pointer; text-transform: uppercase;
+  }
+  #controls button:hover, #focus button:hover { border-color: var(--ui); }
+
+  #focus {
+    position: fixed; bottom: 56px; left: 16px;
+    display: flex; gap: 6px;
   }
 
-  #panel{
-    top:24px; left:24px;
-    pointer-events:auto;
-    display:flex; flex-direction:column; gap:6px;
-    min-width:230px;
+  #scalehelp {
+    position: fixed; bottom: 16px; right: 16px;
+    font-size: 10px; color: #0a6e0a;
+    text-align: right; line-height: 1.5;
+    text-transform: uppercase; letter-spacing: 0.5px;
   }
-  #panel .title{
-    color:var(--text); opacity:0.55; font-size:10px;
-    letter-spacing:0.18em; text-transform:uppercase; margin-bottom:8px;
-  }
-  .row{display:flex; justify-content:space-between; gap:16px; border-bottom:1px solid rgba(255,255,255,0.06); padding:4px 0;}
-  .row .k{opacity:0.5;}
-  .row .v{color:var(--earth); font-weight:500;}
-  .row .v.sun{color:var(--sun);}
 
-  #speedRow{display:flex; align-items:center; gap:10px; margin-top:10px; pointer-events:auto;}
-  #speedRow input[type=range]{
-    -webkit-appearance:none; appearance:none;
-    width:130px; height:1px; background:rgba(255,255,255,0.25); outline:none;
+  .body-label {
+    position: absolute;
+    font-size: 10px;
+    color: var(--white);
+    text-shadow: 0 0 6px rgba(255,255,255,0.5);
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translate(10px, -8px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
-  #speedRow input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:9px; height:9px; border-radius:50%;
-    background:var(--earth); cursor:pointer;
-  }
-  #playPause{
-    background:none; border:1px solid rgba(255,255,255,0.2); color:var(--text);
-    font-family:inherit; font-size:10px; letter-spacing:0.08em; padding:4px 9px;
-    cursor:pointer; pointer-events:auto;
-  }
-  #playPause:hover{border-color:var(--earth); color:var(--earth);}
-
-  #legend{
-    bottom:24px; left:24px; max-width:340px; opacity:0.6; line-height:1.6; font-size:10px;
-  }
-  #legend b{color:var(--dim); font-weight:500;}
-
-  #origin{
-    top:24px; right:28px; text-align:right; opacity:0.4; font-size:10px; letter-spacing:0.1em;
-  }
+  .body-label .sub { color: #aaaaaa; display: block; font-size: 9px; }
 </style>
 </head>
 <body>
 
-<div id="scene"></div>
-
-<div class="hud" id="panel">
-  <div class="title">Heliocentric — Two-Body</div>
-  <div class="row"><span class="k">sim time</span><span class="v" id="simTime">0.000 yr</span></div>
-  <div class="row"><span class="k">earth distance</span><span class="v" id="earthDist">1.000 AU</span></div>
-  <div class="row"><span class="k">earth velocity</span><span class="v" id="earthVel">29.78 km/s</span></div>
-  <div class="row"><span class="k">sun mass</span><span class="v sun">1.000 M☉</span></div>
-  <div id="speedRow">
-    <button id="playPause">PAUSE</button>
-    <input type="range" id="speedSlider" min="0" max="4" step="0.01" value="1">
-    <span id="speedLabel" style="opacity:0.5;">1.00×</span>
-  </div>
+<div id="hud">
+  <div class="row"><span class="label">t &nbsp;</span><span class="val" id="hud-time">0 d</span></div>
+  <div class="row"><span class="label">earth r &nbsp;</span><span class="val" id="hud-r">1.000 AU</span></div>
+  <div class="row"><span class="label">earth v &nbsp;</span><span class="val" id="hud-v">29.78 km/s</span></div>
+  <div class="row sec"><span class="label">star drift t &nbsp;</span><span class="val" id="hud-styr">0 yr</span></div>
+  <div class="row"><span class="label">proxima r &nbsp;</span><span class="val" id="hud-prox">— ly</span></div>
+  <div class="row"><span class="label">rigel r &nbsp;</span><span class="val" id="hud-rigel">— ly</span></div>
 </div>
 
-<div class="hud" id="origin">SOL-CENTRIC · LOG₁₀ RADIAL SCALE</div>
-
-<div class="hud" id="legend">
-  <b>scale —</b> radius on screen = 50 · (log₁₀(AU) + 1).<br>
-  1 AU → 50px · 10 AU → 100px · 100 AU → 150px, extending<br>
-  by 50px per decade. Body sizes are illustrative, not to scale.
+<div id="title">
+  <span class="main">Orbital Map</span>
+  Heliocentric &middot; Kepler Two-Body &middot; Log10 Radial Scale &middot; True-Scale Bodies
 </div>
 
-<script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+<div id="focus">
+  <button data-focus="sun">Sol</button>
+  <button data-focus="earth">Earth</button>
+  <button data-focus="proxima">Proxima</button>
+  <button data-focus="rigel">Rigel</button>
+</div>
+
+<div id="controls">
+  <button id="pausebtn">Pause</button>
+  <span>Planet d/s</span>
+  <input type="range" id="speed" min="1" max="120" value="20">
+  <span id="speedval">20 d/s</span>
+  <span>Star yr/s</span>
+  <input type="range" id="staryrs" min="0" max="5000" value="500">
+  <span id="staryrsval">500 yr/s</span>
+  <button id="resetbtn">Reset</button>
+</div>
+
+<div id="scalehelp">
+  distance(au) = (log10(au) + 1) &times; 50 units<br>
+  body radius(au) &times; 50 units/au — linear, true to scale
+</div>
+
+<div id="labels"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  // ================= physical constants =================
+  const AU_KM = 149597870.7;
+  const PC_AU = 206264.80625;
+  const GM_SUN = 0.00029591220828559115; // AU^3 / day^2
+  const AU_PER_DAY_TO_KM_S = AU_KM / 86400;
+  const WORLD_UNITS_PER_AU = 50; // linear scale anchor: matches the log formula's value at 1 AU
+  const DEG = Math.PI / 180;
+
+  function scaleAU(au) {
+    // radial DISTANCE uses log10 scaling: every decade of AU adds 50 units
+    const a = Math.max(au, 1e-9);
+    return (Math.log10(a) + 1) * 50;
   }
-}
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  function trueRadiusUnits(radiusAU) {
+    // body SIZE uses plain linear scaling (no log) at the same 50 units/AU anchor
+    return radiusAU * WORLD_UNITS_PER_AU;
+  }
 
-// ---------- constants ----------
-const AU_YEAR_TO_KMS = 4.74057;      // 1 AU/year in km/s
-const GM_SUN = 4 * Math.PI * Math.PI; // in AU^3 / year^2 (Gaussian units)
-const PX_PER_DECADE = 50;             // screen units per decade of AU
+  // ================= body data (sourced values, see chat) =================
+  const SUN_RADIUS_AU = 696000 / AU_KM;                 // ~0.0046525 AU
+  const EARTH_RADIUS_AU = 1 / 23454.8;                  // user-specified ratio
+  const PROXIMA_RADIUS_AU = 0.154 * SUN_RADIUS_AU;      // 0.154 R_sun
+  const RIGEL_RADIUS_AU = 74 * SUN_RADIUS_AU;           // ~74 R_sun
 
-function screenRadius(auDist){
-  const d = Math.max(auDist, 1e-6);
-  return PX_PER_DECADE * (Math.log10(d) + 1);
-}
+  // Earth heliocentric Keplerian elements (J2000, low-precision / Standish 2006)
+  const EARTH = {
+    a: 1.00000011,                 // AU
+    e: 0.01671123,
+    varpi0: 102.93768193 * DEG,    // longitude of perihelion, rad
+    varpiRateDegPerDay: 0.32327364 / 36525, // real apsidal precession rate
+    tiltDeg: 23.4393,              // obliquity of the ecliptic
+    siderealDay: 0.99726968,       // days
+    axialPrecessionYears: 25772,   // precession of the equinoxes
+    radiusAU: EARTH_RADIUS_AU
+  };
 
-// ---------- renderer / scene ----------
-const container = document.getElementById('scene');
-const scene = new THREE.Scene();
+  const SUN = {
+    radiusAU: SUN_RADIUS_AU,
+    tiltDeg: 7.25,                 // solar equator tilt to the ecliptic
+    rotDays: 24.47                 // sidereal equatorial rotation
+  };
 
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 5000);
-camera.position.set(140, 160, 220);
+  // Distant stars: not gravitationally bound to Sol -> modeled as linear space motion
+  // (real proper motion + radial velocity; this is the same first-order method used in
+  // the literature, e.g. Garcia-Sanchez et al. 2001, for predicting stellar close approaches)
+  const PROXIMA = {
+    name: 'Proxima Centauri',
+    distPc: 1.30197,
+    pmRaMasYr: -3781.741, pmDecMasYr: 769.465,
+    rvKmS: -22.204,
+    radiusAU: PROXIMA_RADIUS_AU,
+    rotDays: 83,
+    angle0: 55 * DEG
+  };
+  const RIGEL = {
+    name: 'Rigel',
+    distPc: 260,
+    pmRaMasYr: 1.31, pmDecMasYr: 0.50,
+    rvKmS: 17.8,
+    radiusAU: RIGEL_RADIUS_AU,
+    // vsini ~20 km/s, min rotation period assuming i=90 deg (true period may be shorter)
+    rotDays: (2 * Math.PI * RIGEL_RADIUS_AU * AU_KM) / (20 * 86400),
+    angle0: 200 * DEG
+  };
+  [PROXIMA, RIGEL].forEach(s => {
+    s.distAU0 = s.distPc * PC_AU;
+    const pmTotalArcsecYr = Math.hypot(s.pmRaMasYr, s.pmDecMasYr) / 1000;
+    s.vTransKmS = 4.74057 * pmTotalArcsecYr * s.distPc; // standard proper-motion -> km/s conversion
+    s.angularVelRadPerYr = (s.vTransKmS / (s.distAU0 * AU_KM)) * 365.25 * 86400;
+    s.radialAuPerYr = (s.rvKmS * 365.25 * 86400) / AU_KM;
+  });
 
-const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-container.appendChild(renderer.domElement);
+  // ================= scene =================
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.minDistance = 20;
-controls.maxDistance = 1600;
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
+  const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.0003, 6000);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  document.body.appendChild(renderer.domElement);
 
-// ---------- starfield ----------
-{
-  const starGeo = new THREE.BufferGeometry();
-  const N = 2200;
-  const pos = new Float32Array(N*3);
-  for(let i=0;i<N;i++){
-    const r = 900 + Math.random()*1400;
-    const theta = Math.random()*Math.PI*2;
-    const phi = Math.acos(2*Math.random()-1);
-    pos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
-    pos[i*3+1] = r*Math.cos(phi);
-    pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
+  // ---------- custom orbit camera ----------
+  const camState = { radius: 2.2, theta: Math.PI / 3, phi: Math.PI / 2.6, target: new THREE.Vector3(0,0,0) };
+  function updateCamera() {
+    const { radius, theta, phi, target } = camState;
+    camera.position.x = target.x + radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = target.y + radius * Math.cos(phi);
+    camera.position.z = target.z + radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(target);
   }
-  starGeo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  const starMat = new THREE.PointsMaterial({ color:0x556270, size:1.1, sizeAttenuation:true });
-  scene.add(new THREE.Points(starGeo, starMat));
-}
+  updateCamera();
 
-// ---------- text sprite helper ----------
-function makeTextSprite(text, color='#c9d3da', size=64){
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = 512; canvas.height = 128;
-  ctx.font = `500 ${size}px 'JetBrains Mono', monospace`;
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = color;
-  ctx.fillText(text, 8, 64);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearFilter;
-  const mat = new THREE.SpriteMaterial({ map:tex, transparent:true, depthWrite:false });
-  const sprite = new THREE.Sprite(mat);
-  const scale = 22;
-  sprite.scale.set(scale, scale*(canvas.height/canvas.width), 1);
-  return { sprite, ctx, canvas, tex };
-}
+  let dragging = false, lastX = 0, lastY = 0;
+  renderer.domElement.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+  window.addEventListener('mouseup', () => dragging = false);
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    camState.theta -= dx * 0.0045;
+    camState.phi = Math.min(Math.max(camState.phi - dy * 0.0045, 0.15), Math.PI - 0.15);
+    updateCamera();
+  });
+  renderer.domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    camState.radius = Math.min(Math.max(camState.radius * (1 + e.deltaY * 0.0012), 0.0008), 3000);
+    updateCamera();
+  }, { passive: false });
 
-// ---------- log-scale reference rings ----------
-const ringGroup = new THREE.Group();
-[1, 10, 100].forEach((au, i) => {
-  const r = screenRadius(au);
-  const pts = [];
-  const SEG = 128;
-  for(let s=0; s<=SEG; s++){
-    const a = (s/SEG)*Math.PI*2;
-    pts.push(new THREE.Vector3(r*Math.cos(a), 0, r*Math.sin(a)));
-  }
-  const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  const mat = new THREE.LineBasicMaterial({ color:0x2a323a, transparent:true, opacity:0.5 });
-  ringGroup.add(new THREE.Line(geo, mat));
+  let touchStart = null;
+  renderer.domElement.addEventListener('touchstart', e => { touchStart = e.touches[0]; }, {passive:true});
+  renderer.domElement.addEventListener('touchmove', e => {
+    if (!touchStart) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStart.clientX, dy = t.clientY - touchStart.clientY;
+    touchStart = t;
+    camState.theta -= dx * 0.005;
+    camState.phi = Math.min(Math.max(camState.phi - dy * 0.005, 0.15), Math.PI - 0.15);
+    updateCamera();
+  }, {passive:true});
 
-  const label = makeTextSprite(`${au} AU`, '#3d454e', 60);
-  label.sprite.position.set(r, 0, 0);
-  ringGroup.add(label.sprite);
-});
-scene.add(ringGroup);
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
-// ---------- Sun ----------
-const sunGeo = new THREE.IcosahedronGeometry(8, 1);
-const sunMat = new THREE.MeshBasicMaterial({ color:0xf2b545, wireframe:true });
-const sun = new THREE.Mesh(sunGeo, sunMat);
-scene.add(sun);
-const sunLabel = makeTextSprite('SOL', '#f2b545', 60);
-sunLabel.sprite.position.set(0, 14, 0);
-scene.add(sunLabel.sprite);
-
-// ---------- Earth ----------
-const earthGeo = new THREE.IcosahedronGeometry(3, 1);
-const earthMat = new THREE.MeshBasicMaterial({ color:0x4fd1ff, wireframe:true });
-const earth = new THREE.Mesh(earthGeo, earthMat);
-scene.add(earth);
-
-const velLabel = makeTextSprite('29.78 km/s', '#4fd1ff', 60);
-scene.add(velLabel.sprite);
-
-// ---------- trailing gradient orbit ----------
-const TRAIL_LEN = 260;
-const trailPositions = new Float32Array(TRAIL_LEN * 3);
-const trailAlphas = new Float32Array(TRAIL_LEN);
-const trailPoints = []; // buffer of THREE.Vector3, oldest at index 0
-
-const trailGeo = new THREE.BufferGeometry();
-trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-trailGeo.setAttribute('aAlpha', new THREE.BufferAttribute(trailAlphas, 1));
-
-const trailMat = new THREE.ShaderMaterial({
-  uniforms: { uColor: { value: new THREE.Color(0x4fd1ff) } },
-  vertexShader: `
-    attribute float aAlpha;
-    varying float vAlpha;
-    void main(){
-      vAlpha = aAlpha;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  // ---------- starfield ----------
+  (function starfield() {
+    const count = 2500;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = 900 + Math.random() * 1600;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+      positions[i*3+1] = r * Math.cos(phi);
+      positions[i*3+2] = r * Math.sin(phi) * Math.sin(theta);
     }
-  `,
-  fragmentShader: `
-    uniform vec3 uColor;
-    varying float vAlpha;
-    void main(){
-      gl_FragColor = vec4(uColor, vAlpha);
-    }
-  `,
-  transparent: true,
-  depthWrite: false
-});
-const trailLine = new THREE.Line(trailGeo, trailMat);
-scene.add(trailLine);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.1, sizeAttenuation: true, transparent: true, opacity: 0.55 });
+    scene.add(new THREE.Points(geo, mat));
+  })();
 
-// ---------- physics state (AU, years) ----------
-let pos = new THREE.Vector2(1, 0);
-let vel = new THREE.Vector2(0, 2 * Math.PI); // circular orbit at 1 AU
-let simTime = 0;
+  // ---------- reference rings (log-scale distance guides) ----------
+  const refGroup = new THREE.Group();
+  scene.add(refGroup);
+  [1, 10, 100].forEach(au => {
+    const radius = scaleAU(au);
+    const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI, false, 0);
+    const pts = curve.getPoints(160).map(p => new THREE.Vector3(p.x, 0, p.y));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 });
+    refGroup.add(new THREE.LineLoop(geo, mat));
+  });
 
-function accel(p){
-  const r = p.length();
-  const f = -GM_SUN / (r*r*r);
-  return new THREE.Vector2(p.x*f, p.y*f);
-}
-
-function stepPhysics(dt){
-  const a0 = accel(pos);
-  pos = pos.clone().add(vel.clone().multiplyScalar(dt)).add(a0.clone().multiplyScalar(0.5*dt*dt));
-  const a1 = accel(pos);
-  vel = vel.clone().add(a0.add(a1).multiplyScalar(0.5*dt));
-  simTime += dt;
-}
-
-// ---------- UI wiring ----------
-let running = true;
-let speed = 1;
-document.getElementById('playPause').addEventListener('click', (e) => {
-  running = !running;
-  e.target.textContent = running ? 'PAUSE' : 'PLAY';
-});
-document.getElementById('speedSlider').addEventListener('input', (e) => {
-  speed = parseFloat(e.target.value);
-  document.getElementById('speedLabel').textContent = speed.toFixed(2) + '×';
-});
-
-const elSimTime = document.getElementById('simTime');
-const elEarthDist = document.getElementById('earthDist');
-const elEarthVel = document.getElementById('earthVel');
-
-// ---------- main loop ----------
-const SUBSTEPS = 12;
-const BASE_DT = 0.0025; // years per substep at 1x speed
-let hudCounter = 0;
-
-function animate(){
-  requestAnimationFrame(animate);
-
-  if(running){
-    for(let i=0;i<SUBSTEPS;i++){
-      stepPhysics(BASE_DT * speed);
-    }
+  // ================= helper: build a tilted, spinning wireframe body =================
+  function makeBody(radiusUnits, tiltDeg, detail) {
+    const pivot = new THREE.Group();      // sits at the body's orbital position
+    const tiltGroup = new THREE.Group();  // carries axial tilt (and precesses for Earth)
+    tiltGroup.rotation.z = tiltDeg * DEG;
+    const geo = new THREE.IcosahedronGeometry(Math.max(radiusUnits, 1e-6), detail || 1);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+    const mesh = new THREE.Mesh(geo, mat);
+    tiltGroup.add(mesh);
+    pivot.add(tiltGroup);
+    return { pivot, tiltGroup, mesh };
   }
 
-  const distAU = pos.length();
-  const speedAUyr = vel.length();
-  const angle = Math.atan2(pos.y, pos.x);
-  const rScreen = screenRadius(distAU);
-  const worldX = rScreen * Math.cos(angle);
-  const worldZ = rScreen * Math.sin(angle);
+  const sunBody = makeBody(trueRadiusUnits(SUN.radiusAU), SUN.tiltDeg, 2);
+  scene.add(sunBody.pivot);
 
-  earth.position.set(worldX, 0, worldZ);
-  earth.rotation.y += 0.01;
-  earth.rotation.x += 0.004;
-  sun.rotation.y += 0.0015;
+  const earthBody = makeBody(trueRadiusUnits(EARTH.radiusAU), EARTH.tiltDeg, 1);
+  scene.add(earthBody.pivot);
 
-  velLabel.sprite.position.set(worldX, 8, worldZ);
+  const proximaBody = makeBody(trueRadiusUnits(PROXIMA.radiusAU), 0, 1);
+  scene.add(proximaBody.pivot);
 
-  // update trail
-  trailPoints.push(new THREE.Vector3(worldX, 0, worldZ));
-  if(trailPoints.length > TRAIL_LEN) trailPoints.shift();
-  for(let i=0;i<TRAIL_LEN;i++){
-    if(i < trailPoints.length){
-      const p = trailPoints[i];
-      trailPositions[i*3] = p.x;
-      trailPositions[i*3+1] = p.y;
-      trailPositions[i*3+2] = p.z;
-      trailAlphas[i] = (i / Math.max(trailPoints.length-1,1)) * 0.85;
-    } else {
-      trailPositions[i*3] = trailPositions[i*3+1] = trailPositions[i*3+2] = 0;
-      trailAlphas[i] = 0;
+  const rigelBody = makeBody(trueRadiusUnits(RIGEL.radiusAU), 0, 2);
+  scene.add(rigelBody.pivot);
+
+  // full-orbit ellipse guide for Earth (drawn once, static shape; re-drawn if precession is visible)
+  const earthOrbitGeo = new THREE.BufferGeometry();
+  const earthOrbitMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
+  const earthOrbitLine = new THREE.LineLoop(earthOrbitGeo, earthOrbitMat);
+  scene.add(earthOrbitLine);
+  function rebuildEarthOrbitGuide(varpi) {
+    const pts = [];
+    for (let i = 0; i <= 180; i++) {
+      const nu = (i / 180) * Math.PI * 2;
+      const r = EARTH.a * (1 - EARTH.e * EARTH.e) / (1 + EARTH.e * Math.cos(nu));
+      const worldR = scaleAU(r);
+      const ang = nu + varpi;
+      pts.push(new THREE.Vector3(worldR * Math.cos(ang), 0, worldR * Math.sin(ang)));
     }
-  }
-  trailGeo.attributes.position.needsUpdate = true;
-  trailGeo.attributes.aAlpha.needsUpdate = true;
-  trailGeo.setDrawRange(0, trailPoints.length);
-
-  // throttled HUD text updates
-  hudCounter++;
-  if(hudCounter % 6 === 0){
-    elSimTime.textContent = simTime.toFixed(3) + ' yr';
-    elEarthDist.textContent = distAU.toFixed(3) + ' AU';
-    const kms = speedAUyr * AU_YEAR_TO_KMS;
-    elEarthVel.textContent = kms.toFixed(2) + ' km/s';
-
-    const ctx = velLabel.ctx;
-    ctx.clearRect(0,0,velLabel.canvas.width, velLabel.canvas.height);
-    ctx.font = `500 60px 'JetBrains Mono', monospace`;
-    ctx.fillStyle = '#4fd1ff';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(kms.toFixed(2) + ' km/s', 8, 64);
-    velLabel.tex.needsUpdate = true;
+    earthOrbitGeo.setFromPoints(pts);
   }
 
-  controls.update();
-  renderer.render(scene, camera);
-}
+  // ---------- trail (gradient fading black -> white) ----------
+  const MAX_TRAIL_POINTS = 900;
+  const trailPositions = new Float32Array(MAX_TRAIL_POINTS * 3);
+  const trailColors = new Float32Array(MAX_TRAIL_POINTS * 3);
+  const trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+  trailGeo.setAttribute('color', new THREE.BufferAttribute(trailColors, 3));
+  trailGeo.setDrawRange(0, 0);
+  const trailMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true });
+  const trailLine = new THREE.Line(trailGeo, trailMat);
+  scene.add(trailLine);
 
-animate();
+  const trail = [];
+  function pushTrailPoint(x, z) {
+    trail.push({ x, z });
+    if (trail.length > MAX_TRAIL_POINTS) trail.shift();
+    const n = trail.length;
+    for (let i = 0; i < n; i++) {
+      const p = trail[i];
+      trailPositions[i*3] = p.x; trailPositions[i*3+1] = 0; trailPositions[i*3+2] = p.z;
+      const t = i / Math.max(n - 1, 1);
+      trailColors[i*3] = t; trailColors[i*3+1] = t; trailColors[i*3+2] = t; // black -> white
+    }
+    trailGeo.setDrawRange(0, n);
+    trailGeo.attributes.position.needsUpdate = true;
+    trailGeo.attributes.color.needsUpdate = true;
+  }
+
+  // ================= simulation state =================
+  let simDays = 0, starYears = 0, running = true;
+  let proxState = { distAU: PROXIMA.distAU0, angle: PROXIMA.angle0 };
+  let rigelState = { distAU: RIGEL.distAU0, angle: RIGEL.angle0 };
+
+  function resetState() {
+    simDays = 0; starYears = 0;
+    proxState = { distAU: PROXIMA.distAU0, angle: PROXIMA.angle0 };
+    rigelState = { distAU: RIGEL.distAU0, angle: RIGEL.angle0 };
+    trail.length = 0;
+    trailGeo.setDrawRange(0, 0);
+  }
+
+  function solveKepler(M, e) {
+    let E = e < 0.8 ? M : Math.PI;
+    for (let i = 0; i < 8; i++) {
+      E = E - (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    }
+    return E;
+  }
+
+  // ================= HUD / labels =================
+  const hudTime = document.getElementById('hud-time');
+  const hudR = document.getElementById('hud-r');
+  const hudV = document.getElementById('hud-v');
+  const hudStYr = document.getElementById('hud-styr');
+  const hudProx = document.getElementById('hud-prox');
+  const hudRigel = document.getElementById('hud-rigel');
+
+  const labelsLayer = document.getElementById('labels');
+  function makeLabel() { const d = document.createElement('div'); d.className = 'body-label'; labelsLayer.appendChild(d); return d; }
+  const sunLabel = makeLabel();
+  const earthLabel = makeLabel();
+  const proxLabel = makeLabel();
+  const rigelLabel = makeLabel();
+  sunLabel.innerHTML = 'Sol<span class="sub">1.000 solar radii</span>';
+
+  function project(pivot, label) {
+    const v = pivot.position.clone().project(camera);
+    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+    if (v.z > 1 || v.z < -1) { label.style.display = 'none'; return; }
+    label.style.display = 'block';
+    label.style.left = x + 'px';
+    label.style.top = y + 'px';
+  }
+
+  // ================= controls =================
+  const speedSlider = document.getElementById('speed');
+  const speedVal = document.getElementById('speedval');
+  speedSlider.addEventListener('input', () => { speedVal.textContent = speedSlider.value + ' d/s'; });
+
+  const starSlider = document.getElementById('staryrs');
+  const starVal = document.getElementById('staryrsval');
+  starSlider.addEventListener('input', () => { starVal.textContent = starSlider.value + ' yr/s'; });
+
+  document.getElementById('pausebtn').addEventListener('click', (e) => {
+    running = !running;
+    e.target.textContent = running ? 'Pause' : 'Resume';
+  });
+  document.getElementById('resetbtn').addEventListener('click', resetState);
+
+  document.querySelectorAll('#focus button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const which = btn.getAttribute('data-focus');
+      if (which === 'sun') { camState.target.copy(sunBody.pivot.position); camState.radius = 1.2; }
+      if (which === 'earth') { camState.target.copy(earthBody.pivot.position); camState.radius = 0.02; }
+      if (which === 'proxima') { camState.target.copy(proximaBody.pivot.position); camState.radius = 0.25; }
+      if (which === 'rigel') { camState.target.copy(rigelBody.pivot.position); camState.radius = 50; }
+      updateCamera();
+    });
+  });
+
+  // ================= animation loop =================
+  const clock = new THREE.Clock();
+  let currentVarpi = EARTH.varpi0;
+  rebuildEarthOrbitGuide(currentVarpi);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const realDt = Math.min(clock.getDelta(), 0.1);
+
+    if (running) {
+      const daysPerSec = parseFloat(speedSlider.value);
+      simDays += realDt * daysPerSec;
+      const yrPerSec = parseFloat(starSlider.value);
+      starYears += realDt * yrPerSec;
+    }
+
+    // ---- Earth: analytic Kepler solution ----
+    const newVarpi = EARTH.varpi0 + EARTH.varpiRateDegPerDay * DEG * simDays;
+    if (Math.abs(newVarpi - currentVarpi) > 0.0005) rebuildEarthOrbitGuide(newVarpi);
+    currentVarpi = newVarpi;
+    const n = Math.sqrt(GM_SUN / (EARTH.a * EARTH.a * EARTH.a)); // rad/day
+    const M = n * simDays;
+    const E = solveKepler(M % (2 * Math.PI), EARTH.e);
+    const rAU = EARTH.a * (1 - EARTH.e * Math.cos(E));
+    const nu = Math.atan2(Math.sqrt(1 - EARTH.e * EARTH.e) * Math.sin(E), Math.cos(E) - EARTH.e);
+    const worldR = scaleAU(rAU);
+    const ang = nu + currentVarpi;
+    const ex = worldR * Math.cos(ang), ez = worldR * Math.sin(ang);
+    earthBody.pivot.position.set(ex, 0, ez);
+    const vAuDay = Math.sqrt(GM_SUN * (2 / rAU - 1 / EARTH.a)); // vis-viva
+    const vKmS = vAuDay * AU_PER_DAY_TO_KM_S;
+
+    // spin: sidereal rotation + slow axial (equinox) precession of the tilt direction
+    earthBody.mesh.rotation.y = (2 * Math.PI / EARTH.siderealDay) * simDays;
+    earthBody.tiltGroup.rotation.y = (2 * Math.PI / (EARTH.axialPrecessionYears * 365.25)) * simDays;
+
+    // ---- Sun spin ----
+    sunBody.mesh.rotation.y = (2 * Math.PI / SUN.rotDays) * simDays;
+
+    // ---- distant stars: linear space motion (real proper motion + radial velocity) ----
+    proxState.distAU = PROXIMA.distAU0 + PROXIMA.radialAuPerYr * starYears;
+    proxState.angle = PROXIMA.angle0 + PROXIMA.angularVelRadPerYr * starYears;
+    rigelState.distAU = RIGEL.distAU0 + RIGEL.radialAuPerYr * starYears;
+    rigelState.angle = RIGEL.angle0 + RIGEL.angularVelRadPerYr * starYears;
+
+    const pR = scaleAU(proxState.distAU);
+    proximaBody.pivot.position.set(pR * Math.cos(proxState.angle), 0, pR * Math.sin(proxState.angle));
+    proximaBody.mesh.rotation.y = (2 * Math.PI / PROXIMA.rotDays) * simDays;
+
+    const rR = scaleAU(rigelState.distAU);
+    rigelBody.pivot.position.set(rR * Math.cos(rigelState.angle), 0, rR * Math.sin(rigelState.angle));
+    rigelBody.mesh.rotation.y = (2 * Math.PI / RIGEL.rotDays) * simDays;
+
+    pushTrailPoint(ex, ez);
+
+    // ---- HUD ----
+    hudTime.textContent = simDays.toFixed(1) + ' d (' + (simDays/365.25).toFixed(2) + ' yr)';
+    hudR.textContent = rAU.toFixed(5) + ' AU';
+    hudV.textContent = vKmS.toFixed(2) + ' km/s';
+    hudStYr.textContent = starYears.toFixed(0) + ' yr';
+    hudProx.textContent = ((proxState.distAU / PC_AU) * 3.26156).toFixed(4) + ' ly';
+    hudRigel.textContent = ((rigelState.distAU / PC_AU) * 3.26156).toFixed(2) + ' ly';
+
+    earthLabel.innerHTML = 'Earth<span class="sub">' + rAU.toFixed(3) + ' au &middot; ' + vKmS.toFixed(1) + ' km/s</span>';
+    proxLabel.innerHTML = 'Proxima Centauri<span class="sub">' + ((proxState.distAU/PC_AU)*3.26156).toFixed(3) + ' ly &middot; ' + PROXIMA.rvKmS.toFixed(1) + ' km/s radial</span>';
+    rigelLabel.innerHTML = 'Rigel<span class="sub">' + ((rigelState.distAU/PC_AU)*3.26156).toFixed(1) + ' ly &middot; ' + RIGEL.rvKmS.toFixed(1) + ' km/s radial</span>';
+
+    project(sunBody.pivot, sunLabel);
+    project(earthBody.pivot, earthLabel);
+    project(proximaBody.pivot, proxLabel);
+    project(rigelBody.pivot, rigelLabel);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
 </script>
 </body>
 </html>
