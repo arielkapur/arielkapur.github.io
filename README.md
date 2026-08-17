@@ -9,8 +9,8 @@ No papers written yet. I'm a first-year student. Give me some time.
 ```mermaid
 graph TD
   A[index.html] --> B[map]
-  B --> C[neural net component]
-  B --> D[visual representation framework]
+  B --> C[Neural net evolution across Minkowski time]
+  B --> D[Mathematical Metric + Spatial Data Structure]
 ```
 
 # map plan 17/08/26
