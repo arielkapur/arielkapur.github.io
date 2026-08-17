@@ -4,6 +4,8 @@ Currently using Kepler equations to model orbits without any links to neural net
 
 No papers written yet. I'm a first-year student. Give me some time.
 
+#### The ambition is to integrate QFT and QCD while developing my own theory on what brand of orbital mechanics to reference in the generation of this simulation.
+
 ```mermaid
 graph TD
   A[index.html] --> B[map]
