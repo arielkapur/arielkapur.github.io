@@ -158,9 +158,61 @@
     margin-top: 1px;
     text-transform: none;
   }
+
+  #loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--bg);
+    transition: opacity 420ms ease;
+  }
+
+  #loading-overlay.loading-overlay-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #loading-bar {
+    width: 220px;
+    max-width: 60vw;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+
+  #loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--fg);
+    transition: width 200ms ease;
+  }
+
+  #loading-label {
+    font-family: Georgia, serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #loading-overlay {
+      transition: none;
+    }
+  }
 </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+  <div id="loading-label">syncing live planetary data</div>
+  <div id="loading-bar"><div id="loading-bar-fill"></div></div>
+</div>
 
 <div id="hud">
   <div class="row"><span class="label">t </span><span class="val" id="hud-time">0.0 d</span></div>
@@ -371,6 +423,23 @@
       speedKmS: orbitalSpeedAuPerDay * AU_PER_DAY_TO_KM_S,
       radiusAU
     };
+  }
+
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const loadingBarFill = document.getElementById('loading-bar-fill');
+  let initialLoadComplete = false;
+
+  function setLoadingProgress(fraction) {
+    if (initialLoadComplete) return;
+    loadingBarFill.style.width = `${Math.min(100, Math.round(fraction * 100))}%`;
+  }
+
+  function hideLoadingOverlay() {
+    if (initialLoadComplete) return;
+    initialLoadComplete = true;
+    setLoadingProgress(1);
+    loadingOverlay.classList.add('loading-overlay-hidden');
+    setTimeout(() => { loadingOverlay.style.display = 'none'; }, 420);
   }
 
   const scene = new THREE.Scene();
@@ -703,6 +772,7 @@
         results.push({ planet, error: lastError });
       }
 
+      setLoadingProgress(results.length / PLANETS.length);
       await wait(120);
     }
 
@@ -750,6 +820,7 @@
   }, LIVE_REFRESH_MS);
 
   await refreshLiveDatabase();
+  hideLoadingOverlay();
 
   const clock = new THREE.Clock();
 

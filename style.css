@@ -158,7 +158,7 @@ h2.subheading {
 
 .pixelitalic,
 p.pixelitalic {
-    font-family: "dos", monospace !important;
+    font-family: "cavalhatriz", monospace !important;
     line-height: 1.2;
     margin: 8px 0;
     font-size: 15px !important;
@@ -166,6 +166,20 @@ p.pixelitalic {
 
 /* If links or other inline elements should use pixelitalic, allow applying class to them too */
 .pixelitalic-inline {
+    font-family: "cavalhatriz", monospace !important;
+    font-style: italic !important;
+}
+
+.dos,
+p.dos {
+    font-family: "dos", monospace !important;
+    line-height: 1.2;
+    margin: 8px 0;
+    font-size: 15px !important;
+}
+
+/* If links or other inline elements should use pixelitalic, allow applying class to them too */
+.dos-inline {
     font-family: "dos", monospace !important;
     font-style: italic !important;
 }
