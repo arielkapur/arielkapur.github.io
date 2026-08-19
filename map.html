@@ -141,14 +141,29 @@
     position: absolute;
     font-size: 10px;
     color: var(--fg);
-    background: rgba(249, 249, 249, 0.8);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(249, 249, 249, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.04);
     padding: 2px 4px;
-    pointer-events: none;
+    opacity: 0.45;
+    pointer-events: auto;
+    cursor: pointer;
     white-space: nowrap;
     transform: translate(10px, -8px);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-family: inherit;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: opacity 200ms ease, background 200ms ease, border-color 200ms ease;
+  }
+
+  .body-label:hover,
+  .body-label:focus-visible {
+    opacity: 1;
+    background: rgba(249, 249, 249, 0.92);
+    border-color: rgba(0, 0, 0, 0.15);
+    outline: none;
   }
 
   .body-label .sub {
@@ -157,6 +172,111 @@
     font-size: 9px;
     margin-top: 1px;
     text-transform: none;
+  }
+
+  /* Fallback cursor styling for map.html, which doesn't link the main style.css.
+     If the site's stylesheet already defines #cursor rules, these are redundant
+     but harmless (same visual intent). */
+  #cursor { position: fixed; z-index: 9999; pointer-events: none; }
+  #cursor img { display: block; width: 100%; height: 100%; }
+  #cursor.cursor-white img { filter: brightness(0) invert(1); }
+
+  #info-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 50vw;
+    max-width: 640px;
+    min-width: 320px;
+    background: rgba(249, 249, 249, 0.98);
+    border-left: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.06);
+    transform: translateX(100%);
+    transition: transform 340ms ease;
+    z-index: 16;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 56px 44px;
+    font-family: Georgia, serif;
+  }
+
+  #info-panel.open {
+    transform: translateX(0);
+  }
+
+  #info-close {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  #info-content h2 {
+    font-size: 30px;
+    font-weight: 400;
+    margin: 0 0 2px;
+    text-transform: capitalize;
+  }
+
+  #info-content .pronunciation {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 14px;
+    margin: 0 0 28px;
+  }
+
+  #info-content h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin: 26px 0 8px;
+    font-weight: 400;
+  }
+
+  #info-content .data-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--soft);
+    font-size: 13px;
+  }
+
+  #info-content .data-row .k {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 10.5px;
+    flex-shrink: 0;
+  }
+
+  #info-content .data-row .v {
+    text-align: right;
+  }
+
+  #info-content .comp-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+
+  @media (max-width: 720px) {
+    #info-panel {
+      width: 100vw;
+      max-width: none;
+      padding: 48px 24px;
+    }
   }
 
   #loading-overlay {
@@ -246,14 +366,21 @@
   <span id="speedval">4 d/s</span>
   <button id="syncbtn">Sync now</button>
   <button id="resetbtn">Reset trails</button>
+  <button id="scalebtn">Scale: Linear (true)</button>
 </div>
 
 <div id="scalehelp">
   heliocentric vectors are in au and au/day<br>
-  refreshed from horizons every 30 minutes
+  refreshed from horizons every 30 minutes<br>
+  <span id="scalehelp-mode">distance shown true-to-scale (1 au = 15 units)</span>
 </div>
 
 <div id="labels"></div>
+
+<div id="info-panel" aria-hidden="true">
+  <button id="info-close" aria-label="Close panel" type="button">&times;</button>
+  <div id="info-content"></div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -265,6 +392,20 @@
   const HORIZONS_CENTER = '500@10';
   const LIVE_REFRESH_MS = 30 * 60 * 1000;
   const GM_SUN = 0.00029591220828559115;
+
+  // Scale mode: 'linear' keeps real relative distances (true-to-scale orbits,
+  // undistorted ellipses). 'log' compresses distance by log10 so outer planets
+  // pull in closer -- useful for framing the whole system at once, but it bends
+  // eccentric orbits (esp. Mercury) out of their true elliptical shape, since a
+  // log transform on radius is not a shape-preserving map. Toggle with the button.
+  let scaleMode = 'linear';
+  function scaleFactorForRadius(rAU) {
+    if (scaleMode === 'log') {
+      const a = Math.max(rAU, 1e-6);
+      return ((Math.log10(a) + 1) * 50) / a;
+    }
+    return UNITS_PER_AU;
+  }
 
   const SUN_RADIUS_AU = 696000 / AU_KM;
   const MERCURY_RADIUS_AU = 2439.7 / AU_KM;
@@ -534,14 +675,21 @@
   const referenceGroup = new THREE.Group();
   scene.add(referenceGroup);
 
-  [1, 5, 10, 20, 30].forEach((orbitAU) => {
-    const orbitPoints = makeCircle(orbitAU * UNITS_PER_AU);
-    const orbitLine = createSceneLine(orbitPoints, 0x111111, 0.08);
-    referenceGroup.add(orbitLine);
-  });
-
-  const planeGuide = createSceneLine(makeCircle(32 * UNITS_PER_AU), 0x111111, 0.04);
-  referenceGroup.add(planeGuide);
+  function rebuildReferenceRings() {
+    while (referenceGroup.children.length) {
+      const child = referenceGroup.children.pop();
+      child.geometry.dispose();
+      child.material.dispose();
+    }
+    [1, 5, 10, 20, 30].forEach((orbitAU) => {
+      const orbitPoints = makeCircle(orbitAU * scaleFactorForRadius(orbitAU));
+      const orbitLine = createSceneLine(orbitPoints, 0x111111, 0.08);
+      referenceGroup.add(orbitLine);
+    });
+    const planeGuide = createSceneLine(makeCircle(32 * scaleFactorForRadius(32)), 0x111111, 0.04);
+    referenceGroup.add(planeGuide);
+  }
+  rebuildReferenceRings();
 
   function makeBody(radiusUnits, tiltDeg, detail) {
     const pivot = new THREE.Group();
@@ -588,20 +736,173 @@
     planetTrailData[planet.name] = { ...trail, points: [] };
   });
 
+  // ---------- essential-data panel ----------
+  const BODY_INFO = {
+    Sol: {
+      pronunciation: 'SOHL',
+      diameterKm: 1391000,
+      massKg: '1.989 × 10^30 kg (333,000 × Earth)',
+      tempC: '~5,500°C (photosphere)',
+      compositionType: 'bulk composition, by mass',
+      composition: [
+        { label: 'Hydrogen', pct: 73 },
+        { label: 'Helium', pct: 25 },
+        { label: 'Heavier elements (O, C, Fe, Ne...)', pct: 2 }
+      ]
+    },
+    Mercury: {
+      pronunciation: 'MUR-kyuh-ree',
+      diameterKm: 4879,
+      massKg: '3.30 × 10^23 kg (0.055 × Earth)',
+      tempC: 'mean ~167°C (range −173°C to 427°C)',
+      compositionType: 'bulk composition, by mass',
+      composition: [
+        { label: 'Iron-nickel core', pct: 70 },
+        { label: 'Silicate mantle & crust', pct: 30 }
+      ]
+    },
+    Venus: {
+      pronunciation: 'VEE-nuhs',
+      diameterKm: 12104,
+      massKg: '4.87 × 10^24 kg (0.815 × Earth)',
+      tempC: 'mean ~464°C (surface, runaway greenhouse)',
+      compositionType: 'bulk composition, by mass',
+      composition: [
+        { label: 'Iron-nickel core', pct: 30 },
+        { label: 'Silicate mantle & crust', pct: 70 }
+      ]
+    },
+    Earth: {
+      pronunciation: 'URTH',
+      diameterKm: 12742,
+      massKg: '5.97 × 10^24 kg',
+      tempC: 'mean ~15°C (surface)',
+      compositionType: 'bulk composition, by mass',
+      composition: [
+        { label: 'Iron', pct: 32.1 },
+        { label: 'Oxygen', pct: 30.1 },
+        { label: 'Silicon', pct: 15.1 },
+        { label: 'Magnesium', pct: 13.9 },
+        { label: 'Sulfur', pct: 2.9 },
+        { label: 'Nickel', pct: 1.8 },
+        { label: 'Calcium', pct: 1.5 },
+        { label: 'Aluminium', pct: 1.4 },
+        { label: 'Other', pct: 1.2 }
+      ]
+    },
+    Mars: {
+      pronunciation: 'MAHRZ',
+      diameterKm: 6779,
+      massKg: '6.42 × 10^23 kg (0.107 × Earth)',
+      tempC: 'mean ~−65°C (range −153°C to 20°C)',
+      compositionType: 'bulk composition, by mass (approx.)',
+      composition: [
+        { label: 'Iron-nickel-sulfur core', pct: 20 },
+        { label: 'Silicate mantle & crust', pct: 80 }
+      ]
+    },
+    Jupiter: {
+      pronunciation: 'JOO-pih-tuhr',
+      diameterKm: 139822,
+      massKg: '1.898 × 10^27 kg (318 × Earth)',
+      tempC: '~−110°C (cloud-top)',
+      compositionType: 'atmosphere, by volume',
+      composition: [
+        { label: 'Hydrogen', pct: 89.8 },
+        { label: 'Helium', pct: 10.2 },
+        { label: 'Methane, ammonia & trace gases', pct: '<0.1' }
+      ]
+    },
+    Saturn: {
+      pronunciation: 'SAT-ern',
+      diameterKm: 116464,
+      massKg: '5.68 × 10^26 kg (95.2 × Earth)',
+      tempC: '~−140°C (cloud-top)',
+      compositionType: 'atmosphere, by volume',
+      composition: [
+        { label: 'Hydrogen', pct: 96.3 },
+        { label: 'Helium', pct: 3.25 },
+        { label: 'Methane & trace gases', pct: 0.45 }
+      ]
+    },
+    Uranus: {
+      pronunciation: 'YOOR-uh-nuhs',
+      diameterKm: 50724,
+      massKg: '8.68 × 10^25 kg (14.5 × Earth)',
+      tempC: '~−195°C (cloud-top)',
+      compositionType: 'atmosphere, by volume',
+      composition: [
+        { label: 'Hydrogen', pct: 82.5 },
+        { label: 'Helium', pct: 15.2 },
+        { label: 'Methane', pct: 2.3 }
+      ]
+    },
+    Neptune: {
+      pronunciation: 'NEP-toon',
+      diameterKm: 49244,
+      massKg: '1.02 × 10^26 kg (17.1 × Earth)',
+      tempC: '~−200°C (cloud-top)',
+      compositionType: 'atmosphere, by volume',
+      composition: [
+        { label: 'Hydrogen', pct: 80 },
+        { label: 'Helium', pct: 19 },
+        { label: 'Methane', pct: 1.5 }
+      ]
+    }
+  };
+
+  const infoPanel = document.getElementById('info-panel');
+  const infoContent = document.getElementById('info-content');
+  const infoClose = document.getElementById('info-close');
+
+  function openInfoPanel(name) {
+    const info = BODY_INFO[name];
+    if (!info) return;
+    const compRows = info.composition.map((c) => `
+      <div class="data-row"><span class="k">${c.label}</span><span class="v">${c.pct}%</span></div>
+    `).join('');
+    infoContent.innerHTML = `
+      <h2>${name === 'Sol' ? 'Sol (the Sun)' : name}</h2>
+      <p class="pronunciation">${info.pronunciation}</p>
+      <h3>Essential data</h3>
+      <div class="data-row"><span class="k">Diameter</span><span class="v">${info.diameterKm.toLocaleString()} km</span></div>
+      <div class="data-row"><span class="k">Mass</span><span class="v">${info.massKg}</span></div>
+      <div class="data-row"><span class="k">Temperature</span><span class="v">${info.tempC}</span></div>
+      <h3>Composition</h3>
+      <p class="comp-note">${info.compositionType}</p>
+      ${compRows}
+    `;
+    infoPanel.classList.add('open');
+    infoPanel.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeInfoPanel() {
+    infoPanel.classList.remove('open');
+    infoPanel.setAttribute('aria-hidden', 'true');
+  }
+
+  infoClose.addEventListener('click', closeInfoPanel);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeInfoPanel();
+  });
+
   const labelsLayer = document.getElementById('labels');
-  function makeLabel() {
-    const label = document.createElement('div');
-    label.className = 'body-label';
+  function makeLabel(bodyName) {
+    const label = document.createElement('button');
+    label.type = 'button';
+    label.className = 'body-label reveal-highlight';
+    label.setAttribute('aria-label', `${bodyName} — view data`);
+    label.addEventListener('click', () => openInfoPanel(bodyName));
     labelsLayer.appendChild(label);
     return label;
   }
 
-  const sunLabel = makeLabel();
+  const sunLabel = makeLabel('Sol');
   const planetLabels = {};
   sunLabel.innerHTML = 'Sol<span class="sub">0, 0, 0 au</span>';
 
   PLANETS.forEach((planet) => {
-    planetLabels[planet.name] = makeLabel();
+    planetLabels[planet.name] = makeLabel(planet.name);
   });
 
   function project(pivot, label) {
@@ -642,13 +943,29 @@
     pauseBtn.textContent = running ? 'Pause' : 'Resume';
   });
 
-  resetBtn.addEventListener('click', () => {
-    simulationDays = 0;
+  function clearTrails() {
     Object.values(planetTrailData).forEach((trail) => {
       trail.points.length = 0;
       trail.geometry.setDrawRange(0, 0);
       trail.geometry.attributes.position.needsUpdate = true;
     });
+  }
+
+  resetBtn.addEventListener('click', () => {
+    simulationDays = 0;
+    clearTrails();
+  });
+
+  const scaleBtn = document.getElementById('scalebtn');
+  const scalehelpMode = document.getElementById('scalehelp-mode');
+  scaleBtn.addEventListener('click', () => {
+    scaleMode = scaleMode === 'linear' ? 'log' : 'linear';
+    scaleBtn.textContent = scaleMode === 'linear' ? 'Scale: Linear (true)' : 'Scale: Log10';
+    scalehelpMode.textContent = scaleMode === 'linear'
+      ? 'distance shown true-to-scale (1 au = 15 units)'
+      : 'log10 distance: (log10(au)+1) × 50 units — shape of orbits is distorted';
+    rebuildReferenceRings();
+    clearTrails();
   });
 
   const planetStates = {};
@@ -720,19 +1037,25 @@
 
     PLANETS.forEach((planet) => {
       const state = planetStates[planet.name];
-      const scaledX = state.x * UNITS_PER_AU;
-      const scaledY = state.y * UNITS_PER_AU;
-      const scaledZ = state.z * UNITS_PER_AU;
+      const rAU = Math.sqrt(state.x * state.x + state.y * state.y + state.z * state.z);
+      const factor = scaleFactorForRadius(rAU);
+      const scaledX = state.x * factor;
+      const scaledY = state.y * factor;
+      const scaledZ = state.z * factor;
       const body = planetBodies[planet.name];
 
-      body.pivot.position.set(scaledX, scaledY, scaledZ);
+      // Horizons/orbital-element convention: x,y span the ecliptic plane, z is the
+      // small out-of-ecliptic component. Three.js treats Y as "up", so z (out-of-
+      // plane) maps to three.js Y and y (in-plane) maps to three.js Z -- this keeps
+      // the solar system lying flat/horizontal instead of standing up like a wall.
+      body.pivot.position.set(scaledX, scaledZ, scaledY);
       body.mesh.rotation.y = (2 * Math.PI / planet.rotDays) * offsetDays;
 
       const label = planetLabels[planet.name];
       label.innerHTML = `${planet.name}<span class="sub">x ${formatNumber(state.x, 3)} · y ${formatNumber(state.y, 3)} · z ${formatNumber(state.z, 3)} au</span><span class="sub">vx ${formatNumber(state.vx, 4)} · vy ${formatNumber(state.vy, 4)} · vz ${formatNumber(state.vz, 4)} au/day</span>`;
       project(body.pivot, label);
 
-      pushTrailPoint(planetTrailData[planet.name], scaledX, scaledY, scaledZ);
+      pushTrailPoint(planetTrailData[planet.name], scaledX, scaledZ, scaledY);
     });
   }
 
@@ -843,5 +1166,6 @@
   animate();
 })();
 </script>
+<script src="cursor.js"></script>
 </body>
 </html>

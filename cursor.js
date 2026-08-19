@@ -51,25 +51,44 @@ const CURSOR_ID = 'cursor';
         cursor.style.visibility = 'visible';
         cursor.style.opacity = '0';
 
-        const interactiveSelectors = 'a,button,input,textarea,select,label';
-        document.querySelectorAll(interactiveSelectors).forEach(el=>{
-            el.addEventListener('mouseenter', ()=> cursor.classList.add('cursor-active'));
-            el.addEventListener('mouseleave', ()=> cursor.classList.remove('cursor-active'));
-        });
+        // Elements that make the cursor "active" (grow) and/or "white" (invert) on hover/focus.
+        // Bound dynamically so elements added after page load (e.g. JS-generated labels/buttons
+        // in map.html) pick up the same cursor behavior without any extra wiring.
+        const interactiveSelectors = 'a,button,input,textarea,select,label,[data-cursor-active]';
+        const highlightSelector = '.reveal-highlight';
+        const bound = new WeakSet();
 
-        // Make cursor turn stark white when hovering reveal-highlight elements
-        function bindRevealHighlightListeners(){
-            const nodes = document.querySelectorAll('.reveal-highlight');
-            nodes.forEach(n=>{
-                n.addEventListener('mouseenter', ()=> cursor.classList.add('cursor-white'));
-                n.addEventListener('mouseleave', ()=> cursor.classList.remove('cursor-white'));
-                n.addEventListener('focus', ()=> cursor.classList.add('cursor-white'));
-                n.addEventListener('blur', ()=> cursor.classList.remove('cursor-white'));
-            });
+        function bindOne(el){
+            if(bound.has(el)) return;
+            bound.add(el);
+            if(el.matches(interactiveSelectors)){
+                el.addEventListener('mouseenter', ()=> cursor.classList.add('cursor-active'));
+                el.addEventListener('mouseleave', ()=> cursor.classList.remove('cursor-active'));
+            }
+            if(el.matches(highlightSelector)){
+                el.addEventListener('mouseenter', ()=> cursor.classList.add('cursor-white'));
+                el.addEventListener('mouseleave', ()=> cursor.classList.remove('cursor-white'));
+                el.addEventListener('focus', ()=> cursor.classList.add('cursor-white'));
+                el.addEventListener('blur', ()=> cursor.classList.remove('cursor-white'));
+            }
         }
-        // initial bind and mutation observer for dynamic content
-        bindRevealHighlightListeners();
-        const mo = new MutationObserver(bindRevealHighlightListeners);
+
+        function bindAllListeners(root){
+            (root || document).querySelectorAll(`${interactiveSelectors},${highlightSelector}`).forEach(bindOne);
+        }
+
+        // initial bind and mutation observer for dynamic content (works for both
+        // static markup and elements created later by page scripts)
+        bindAllListeners();
+        const mo = new MutationObserver((mutations)=>{
+            mutations.forEach(m=>{
+                m.addedNodes && m.addedNodes.forEach(node=>{
+                    if(node.nodeType !== 1) return;
+                    if(node.matches && (node.matches(interactiveSelectors) || node.matches(highlightSelector))) bindOne(node);
+                    if(node.querySelectorAll) bindAllListeners(node);
+                });
+            });
+        });
         mo.observe(document.body, { childList: true, subtree: true });
 
         let mouseX = window.innerWidth/2, mouseY = window.innerHeight/2;
