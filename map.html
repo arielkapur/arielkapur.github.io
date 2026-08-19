@@ -2,145 +2,394 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Orbital Map — Heliocentric 3D Ephemeris</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>map</title>
 <style>
-  :root { --ui: #00ff00; --white: #ffffff; --dim: #164816; --bg: #000000; }
-  html, body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Courier New', Consolas, monospace; color: var(--ui); }
-  canvas { display: block; }
-  #hud { position: fixed; top: 16px; left: 16px; font-size: 12px; letter-spacing: 0.5px; line-height: 1.6; text-transform: uppercase; pointer-events: none; color: var(--ui); text-shadow: 0 0 6px rgba(0,255,0,0.45); max-width: 300px; }
-  #hud .label { color: #0a6e0a; }
-  #hud .val { color: var(--ui); }
-  #hud .row { margin-bottom: 2px; }
-  #hud .sec { margin-top: 10px; padding-top: 6px; border-top: 1px solid #0a3a0a; }
-  #title { position: fixed; top: 16px; right: 16px; text-align: right; font-size: 11px; color: #0a6e0a; letter-spacing: 1px; text-transform: uppercase; }
-  #title .main { color: var(--ui); font-size: 13px; display:block; margin-bottom:4px; }
-  #controls { position: fixed; bottom: 16px; left: 16px; font-size: 11px; color: #0a6e0a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; text-transform: uppercase; letter-spacing: 0.5px; max-width: 90vw; }
-  #controls input[type=range] { width: 120px; accent-color: var(--ui); background: transparent; }
-  #controls button, #focus button { background: transparent; color: var(--ui); border: 1px solid #0a6e0a; padding: 4px 9px; font-family: inherit; font-size: 11px; letter-spacing: 0.5px; cursor: pointer; text-transform: uppercase; }
-  #controls button:hover, #focus button:hover { border-color: var(--ui); }
-  #focus { position: fixed; bottom: 56px; left: 16px; display: flex; gap: 6px; flex-wrap: wrap; }
-  #scalehelp { position: fixed; bottom: 16px; right: 16px; font-size: 10px; color: #0a6e0a; text-align: right; line-height: 1.5; text-transform: uppercase; letter-spacing: 0.5px; max-width: 200px; }
-  .body-label { position: absolute; font-size: 10px; color: var(--white); text-shadow: 0 0 6px rgba(255,255,255,0.5); pointer-events: none; white-space: nowrap; transform: translate(10px, -8px); text-transform: uppercase; letter-spacing: 0.5px; }
-  .body-label .sub { color: #aaaaaa; display: block; font-size: 9px; }
+  :root {
+    --bg: #f9f9f9;
+    --fg: #111111;
+    --muted: #6c6c6c;
+    --soft: rgba(0, 0, 0, 0.12);
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: Georgia, serif;
+  }
+
+  canvas {
+    display: block;
+  }
+
+  #hud,
+  #title,
+  #controls,
+  #focus,
+  #scalehelp {
+    position: fixed;
+    z-index: 5;
+    color: var(--fg);
+    letter-spacing: 0.4px;
+  }
+
+  #hud {
+    top: 16px;
+    left: 16px;
+    font-size: 12px;
+    line-height: 1.55;
+    text-transform: uppercase;
+    pointer-events: none;
+    max-width: 360px;
+  }
+
+  #hud .label {
+    color: var(--muted);
+  }
+
+  #hud .val {
+    color: var(--fg);
+  }
+
+  #hud .row {
+    margin-bottom: 3px;
+  }
+
+  #hud .sec {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--soft);
+  }
+
+  #title {
+    top: 16px;
+    right: 16px;
+    text-align: right;
+    font-size: 11px;
+    text-transform: uppercase;
+    line-height: 1.5;
+    max-width: 320px;
+  }
+
+  #title .main {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  #controls {
+    left: 16px;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    text-transform: uppercase;
+    max-width: calc(100vw - 32px);
+  }
+
+  #focus {
+    left: 16px;
+    bottom: 56px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 32px);
+  }
+
+  #controls button,
+  #focus button {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--fg);
+    padding: 4px 9px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  #controls button:hover,
+  #focus button:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  #controls input[type=range] {
+    width: 130px;
+    accent-color: var(--fg);
+    background: transparent;
+  }
+
+  #scalehelp {
+    right: 16px;
+    bottom: 16px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.5;
+    text-transform: uppercase;
+    max-width: 250px;
+  }
+
+  .body-label {
+    position: absolute;
+    font-size: 10px;
+    color: var(--fg);
+    background: rgba(249, 249, 249, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 2px 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translate(10px, -8px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .body-label .sub {
+    color: var(--muted);
+    display: block;
+    font-size: 9px;
+    margin-top: 1px;
+    text-transform: none;
+  }
 </style>
 </head>
 <body>
 
 <div id="hud">
-  <div class="row"><span class="label">t </span><span class="val" id="hud-time">0 d</span></div>
-  <div class="row"><span class="label">earth r </span><span class="val" id="hud-earth-r">1.000 AU</span></div>
-  <div class="row"><span class="label">earth v </span><span class="val" id="hud-earth-v">29.78 km/s</span></div>
-  <div class="row sec"><span class="label">yr elapsed </span><span class="val" id="hud-yr">0 yr</span></div>
-  <div class="row"><span class="label">proxima r </span><span class="val" id="hud-proxima-r">— ly</span></div>
+  <div class="row"><span class="label">t </span><span class="val" id="hud-time">0.0 d</span></div>
+  <div class="row"><span class="label">earth xyz </span><span class="val" id="hud-earth-xyz">—</span></div>
+  <div class="row"><span class="label">earth vxyz </span><span class="val" id="hud-earth-vxyz">—</span></div>
+  <div class="row sec"><span class="label">last sync </span><span class="val" id="hud-sync">waiting</span></div>
+  <div class="row"><span class="label">source </span><span class="val" id="hud-source">JPL Horizons live vectors</span></div>
 </div>
 
 <div id="title">
-  <span class="main">Orbital Map</span>
-  Heliocentric · 3D Kepler (Standish 2006) · SIMBAD Stars · Log10 Radial Scale · True-Scale Bodies
+  <span class="main">Solar System</span>
+   heliocentric x/y/z in Astronomical Units · live JPL Horizons data
 </div>
 
 <div id="focus">
   <button data-focus="sun">Sol</button>
-  <button data-focus="earth">Earth</button>
-  <button data-focus="mars">Mars</button>
-  <button data-focus="jupiter">Jupiter</button>
-  <button data-focus="proxima centauri">Proxima</button>
+  <button data-focus="Mercury">Mercury</button>
+  <button data-focus="Venus">Venus</button>
+  <button data-focus="Earth">Earth</button>
+  <button data-focus="Mars">Mars</button>
+  <button data-focus="Jupiter">Jupiter</button>
+  <button data-focus="Saturn">Saturn</button>
+  <button data-focus="Uranus">Uranus</button>
+  <button data-focus="Neptune">Neptune</button>
 </div>
 
 <div id="controls">
   <button id="pausebtn">Pause</button>
-  <span>Planet d/s</span>
-  <input type="range" id="speed" min="1" max="120" value="20">
-  <span id="speedval">20 d/s</span>
-  <span>Star yr/s</span>
-  <input type="range" id="staryrs" min="0" max="5000" value="500">
-  <span id="staryrsval">500 yr/s</span>
-  <button id="resetbtn">Reset</button>
+  <span>Playback d/s</span>
+  <input type="range" id="speed" min="0" max="60" value="4" step="0.25">
+  <span id="speedval">4 d/s</span>
+  <button id="syncbtn">Sync now</button>
+  <button id="resetbtn">Reset trails</button>
 </div>
 
 <div id="scalehelp">
-  distance(au) = (log10(au) + 1) × 50 units<br>
-  body radius(au) × 50 units/au — linear, no fake starfield
+  heliocentric vectors are in au and au/day<br>
+  refreshed from horizons every 30 minutes
 </div>
 
 <div id="labels"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-(function() {
-  // ================= CONSTANTS =================
-  // Physical constants: AU_KM (ISO), PC_AU (parsec), LY_AU (light-year), GM_SUN (heliocentric gravitation)
-  // Data sources:
-  //   - Solar System: Standish 2006 (Keplerian elements fitted to JPL Horizons)
-  //   - Nearby stars: SIMBAD/Gaia DR3 (parallax, proper motion RA/Dec, radial velocity)
-  //   - Body radii: NASA/JPL reference values; Gaia DR3 for stellar radii
-  // Reference frame: Heliocentric ecliptic (J2000.0 epoch)
-  const AU_KM = 149597870.7, PC_AU = 206264.80625, LY_AU = 63241.1;
-  const GM_SUN = 0.00029591220828559115, AU_PER_DAY_TO_KM_S = AU_KM / 86400;
-  const WORLD_UNITS_PER_AU = 50, DEG = Math.PI / 180;
+(async function() {
+  const AU_KM = 149597870.7;
+  const AU_PER_DAY_TO_KM_S = AU_KM / 86400;
+  const DEG = Math.PI / 180;
+  const UNITS_PER_AU = 15;
+  const HORIZONS_CENTER = '500@10';
+  const LIVE_REFRESH_MS = 30 * 60 * 1000;
+  const GM_SUN = 0.00029591220828559115;
 
-  function scaleAU(au) { return (Math.log10(Math.max(au, 1e-9)) + 1) * 50; }
-  function trueRadiusUnits(radiusAU) { return radiusAU * WORLD_UNITS_PER_AU; }
-
-  // Body radii
   const SUN_RADIUS_AU = 696000 / AU_KM;
-  const MERCURY_RADIUS_AU = 2439.7 / AU_KM, VENUS_RADIUS_AU = 6051.8 / AU_KM;
-  const EARTH_RADIUS_AU = 6371 / AU_KM, MARS_RADIUS_AU = 3389.5 / AU_KM;
-  const JUPITER_RADIUS_AU = 69911 / AU_KM, SATURN_RADIUS_AU = 58232 / AU_KM;
-  const URANUS_RADIUS_AU = 25362 / AU_KM, NEPTUNE_RADIUS_AU = 24622 / AU_KM;
-  const PROXIMA_RADIUS_AU = 0.154 * SUN_RADIUS_AU;
-  const ALPHA_A_RADIUS_AU = SUN_RADIUS_AU * 1.24, ALPHA_B_RADIUS_AU = SUN_RADIUS_AU * 0.86;
-  const BARNARD_RADIUS_AU = SUN_RADIUS_AU * 0.20, WOLF_RADIUS_AU = SUN_RADIUS_AU * 0.12;
-  const SIRIUS_A_RADIUS_AU = SUN_RADIUS_AU * 1.71, SIRIUS_B_RADIUS_AU = EARTH_RADIUS_AU * 0.016;
+  const MERCURY_RADIUS_AU = 2439.7 / AU_KM;
+  const VENUS_RADIUS_AU = 6051.8 / AU_KM;
+  const EARTH_RADIUS_AU = 6371 / AU_KM;
+  const MARS_RADIUS_AU = 3389.5 / AU_KM;
+  const JUPITER_RADIUS_AU = 69911 / AU_KM;
+  const SATURN_RADIUS_AU = 58232 / AU_KM;
+  const URANUS_RADIUS_AU = 25362 / AU_KM;
+  const NEPTUNE_RADIUS_AU = 24622 / AU_KM;
 
-  // Solar System planets (Standish 2006 J2000 Keplerian elements)
   const PLANETS = [
-    { name: 'Mercury', a: 0.38709927, e: 0.20563593, i: 7.00497902, node: 48.30475665, perihelion: 77.45779628, M0: 252.25032350, radiusAU: MERCURY_RADIUS_AU, tiltDeg: 0.03, rotDays: 58.6462 },
-    { name: 'Venus', a: 0.72333566, e: 0.00677672, i: 3.39467605, node: 76.68069638, perihelion: 131.60246718, M0: 181.97909950, radiusAU: VENUS_RADIUS_AU, tiltDeg: 177.3, rotDays: 243.0226 },
-    { name: 'Earth', a: 1.00000261, e: 0.01671123, i: 0.00005, node: 0.0, perihelion: 102.93768193, M0: 100.46457166, radiusAU: EARTH_RADIUS_AU, tiltDeg: 23.4393, rotDays: 0.99726968 },
-    { name: 'Mars', a: 1.52371034, e: 0.09339155, i: 1.84969142, node: 49.55953891, perihelion: 336.04084765, M0: 355.45332109, radiusAU: MARS_RADIUS_AU, tiltDeg: 25.19, rotDays: 1.02595675 },
-    { name: 'Jupiter', a: 5.20288700, e: 0.04838624, i: 1.30439695, node: 100.47390909, perihelion: 14.75385695, M0: 34.40438810, radiusAU: JUPITER_RADIUS_AU, tiltDeg: 3.13, rotDays: 0.41354 },
-    { name: 'Saturn', a: 9.53667594, e: 0.05386179, i: 2.48599187, node: 113.66242448, perihelion: 92.59887831, M0: 49.95424423, radiusAU: SATURN_RADIUS_AU, tiltDeg: 26.73, rotDays: 0.426 },
-    { name: 'Uranus', a: 19.18916464, e: 0.04725744, i: 0.77263783, node: 74.01692503, perihelion: 170.95427630, M0: 313.23810451, radiusAU: URANUS_RADIUS_AU, tiltDeg: 97.77, rotDays: 0.718 },
-    { name: 'Neptune', a: 30.06992276, e: 0.00859048, i: 1.77004431, node: 131.78422574, perihelion: 44.97135957, M0: 304.88003352, radiusAU: NEPTUNE_RADIUS_AU, tiltDeg: 28.32, rotDays: 0.671 }
-  ];
-  PLANETS.forEach(p => { p.i *= DEG; p.node *= DEG; p.perihelion *= DEG; p.M0 *= DEG; });
-
-  // Nearby stars (SIMBAD/Gaia DR3, 9 ly list)
-  const STARS = [
-    { name: 'Proxima Centauri', distPc: 1.30197, pmRaMasYr: -3781.741, pmDecMasYr: 769.465, rvKmS: -22.204, radiusAU: PROXIMA_RADIUS_AU, rotDays: 83 },
-    { name: 'Alpha Centauri A', distPc: 1.3477, pmRaMasYr: -3519.64, pmDecMasYr: 2636.21, rvKmS: -25.3, radiusAU: ALPHA_A_RADIUS_AU, rotDays: 22.0 },
-    { name: 'Alpha Centauri B', distPc: 1.3477, pmRaMasYr: -3519.64, pmDecMasYr: 2636.21, rvKmS: -25.3, radiusAU: ALPHA_B_RADIUS_AU, rotDays: 38.0 },
-    { name: "Barnard's Star", distPc: 1.82405, pmRaMasYr: -798.71, pmDecMasYr: 10328.12, rvKmS: -110.51, radiusAU: BARNARD_RADIUS_AU, rotDays: 130.0 },
-    { name: 'Wolf 359', distPc: 2.41808, pmRaMasYr: -563.07, pmDecMasYr: -3107.64, rvKmS: 13.6, radiusAU: WOLF_RADIUS_AU, rotDays: 50.0 },
-    { name: 'Lalande 21185', distPc: 2.54277, pmRaMasYr: -580.45, pmDecMasYr: -4766.17, rvKmS: -85.84, radiusAU: SUN_RADIUS_AU * 0.39, rotDays: 60.0 },
-    { name: 'Sirius A', distPc: 2.63817, pmRaMasYr: -546.01, pmDecMasYr: -1223.08, rvKmS: -5.5, radiusAU: SIRIUS_A_RADIUS_AU, rotDays: 0.5 },
-    { name: 'Sirius B', distPc: 2.63817, pmRaMasYr: -546.01, pmDecMasYr: -1223.08, rvKmS: -5.5, radiusAU: SIRIUS_B_RADIUS_AU, rotDays: 0.3 },
-    { name: 'Luyten 726-8 A', distPc: 2.68800, pmRaMasYr: -3257.89, pmDecMasYr: 24.50, rvKmS: 28.7, radiusAU: SUN_RADIUS_AU * 0.11, rotDays: 35.0 }
+    { name: 'Mercury', horizonsId: '199', a: 0.38709927, e: 0.20563593, i: 7.00497902, node: 48.30475665, perihelion: 77.45779628, M0: 252.25032350, radiusAU: MERCURY_RADIUS_AU, tiltDeg: 0.03, rotDays: 58.6462 },
+    { name: 'Venus', horizonsId: '299', a: 0.72333566, e: 0.00677672, i: 3.39467605, node: 76.68069638, perihelion: 131.60246718, M0: 181.97909950, radiusAU: VENUS_RADIUS_AU, tiltDeg: 177.3, rotDays: 243.0226 },
+    { name: 'Earth', horizonsId: '399', a: 1.00000261, e: 0.01671123, i: 0.00005, node: 0.0, perihelion: 102.93768193, M0: 100.46457166, radiusAU: EARTH_RADIUS_AU, tiltDeg: 23.4393, rotDays: 0.99726968 },
+    { name: 'Mars', horizonsId: '499', a: 1.52371034, e: 0.09339155, i: 1.84969142, node: 49.55953891, perihelion: 336.04084765, M0: 355.45332109, radiusAU: MARS_RADIUS_AU, tiltDeg: 25.19, rotDays: 1.02595675 },
+    { name: 'Jupiter', horizonsId: '599', a: 5.20288700, e: 0.04838624, i: 1.30439695, node: 100.47390909, perihelion: 14.75385695, M0: 34.40438810, radiusAU: JUPITER_RADIUS_AU, tiltDeg: 3.13, rotDays: 0.41354 },
+    { name: 'Saturn', horizonsId: '699', a: 9.53667594, e: 0.05386179, i: 2.48599187, node: 113.66242448, perihelion: 92.59887831, M0: 49.95424423, radiusAU: SATURN_RADIUS_AU, tiltDeg: 26.73, rotDays: 0.426 },
+    { name: 'Uranus', horizonsId: '799', a: 19.18916464, e: 0.04725744, i: 0.77263783, node: 74.01692503, perihelion: 170.95427630, M0: 313.23810451, radiusAU: URANUS_RADIUS_AU, tiltDeg: 97.77, rotDays: 0.718 },
+    { name: 'Neptune', horizonsId: '899', a: 30.06992276, e: 0.00859048, i: 1.77004431, node: 131.78422574, perihelion: 44.97135957, M0: 304.88003352, radiusAU: NEPTUNE_RADIUS_AU, tiltDeg: 28.32, rotDays: 0.671 }
   ];
 
-  STARS.forEach(s => {
-    s.distAU0 = s.distPc * PC_AU;
-    const pmTotal = Math.hypot(s.pmRaMasYr, s.pmDecMasYr) / 1000;
-    s.vTransKmS = 4.74057 * pmTotal * s.distPc;
-    s.vTransAuPerYr = (s.vTransKmS * 365.25 * 86400) / AU_KM;
-    s.radialAuPerYr = (s.rvKmS * 365.25 * 86400) / AU_KM;
-    const theta = Math.atan2(s.pmDecMasYr, s.pmRaMasYr);
-    s.theta0 = theta;
-    s.x = s.distAU0 * Math.cos(theta); 
-    s.z = s.distAU0 * Math.sin(theta); 
-    s.y = 0;
+  PLANETS.forEach((planet) => {
+    planet.i *= DEG;
+    planet.node *= DEG;
+    planet.perihelion *= DEG;
+    planet.M0 *= DEG;
+    planet.bodyRadiusUnits = Math.max(planet.radiusAU * UNITS_PER_AU, 0.12);
   });
 
-  // THREE scene
-  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.0003, 6000);
+  function bodyRadiusUnits(radiusAU) {
+    return Math.max(radiusAU * UNITS_PER_AU, 0.8);
+  }
+
+  function createSceneLine(points, color, opacity) {
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    return new THREE.LineLoop(geometry, material);
+  }
+
+  function makeCircle(radiusUnits, segments = 192) {
+    const points = [];
+    for (let index = 0; index <= segments; index++) {
+      const angle = (index / segments) * Math.PI * 2;
+      points.push(new THREE.Vector3(Math.cos(angle) * radiusUnits, 0, Math.sin(angle) * radiusUnits));
+    }
+    return points;
+  }
+
+  function formatNumber(value, digits = 3) {
+    return Number.isFinite(value) ? value.toFixed(digits) : '—';
+  }
+
+  function toUtcStamp(date) {
+    return date.toISOString().replace('T', ' ').slice(0, 19);
+  }
+
+  function buildHorizonsUrl(planet, timestampMs) {
+    const start = toUtcStamp(new Date(timestampMs));
+    const stop = toUtcStamp(new Date(timestampMs + 60 * 1000));
+    const params = new URLSearchParams({
+      format: 'json',
+      EPHEM_TYPE: 'VECTORS',
+      COMMAND: `'${planet.horizonsId}'`,
+      CENTER: `'${HORIZONS_CENTER}'`,
+      START_TIME: `'${start}'`,
+      STOP_TIME: `'${stop}'`,
+      STEP_SIZE: `'1m'`,
+      OUT_UNITS: `'AU-D'`,
+      REF_PLANE: `'ECLIPTIC'`,
+      REF_SYSTEM: `'ICRF'`,
+      CSV_FORMAT: 'YES',
+      VEC_TABLE: '2'
+    });
+    return `https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`;
+  }
+
+  function parseHorizonsVector(resultText) {
+    const soe = resultText.split('$$SOE');
+    if (soe.length < 2) {
+      throw new Error('Horizons result missing $$SOE');
+    }
+
+    const body = soe[1].split('$$EOE')[0].trim();
+    const line = body.split(/\r?\n/).map((entry) => entry.trim()).find((entry) => entry.includes(',') && /^\d/.test(entry));
+
+    if (!line) {
+      throw new Error('Horizons result missing vector row');
+    }
+
+    const columns = line.split(',').map((value) => value.trim());
+    const [jd, calendar, x, y, z, vx, vy, vz] = columns;
+
+    return {
+      jd: Number.parseFloat(jd),
+      calendar,
+      x: Number.parseFloat(x),
+      y: Number.parseFloat(y),
+      z: Number.parseFloat(z),
+      vx: Number.parseFloat(vx),
+      vy: Number.parseFloat(vy),
+      vz: Number.parseFloat(vz)
+    };
+  }
+
+  function wait(milliseconds) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, milliseconds);
+    });
+  }
+
+  function solveKepler(meanAnomaly, eccentricity) {
+    let eccentricAnomaly = eccentricity < 0.8 ? meanAnomaly : Math.PI;
+    for (let iteration = 0; iteration < 8; iteration++) {
+      eccentricAnomaly = eccentricAnomaly - (eccentricAnomaly - eccentricity * Math.sin(eccentricAnomaly) - meanAnomaly) / (1 - eccentricity * Math.cos(eccentricAnomaly));
+    }
+    return eccentricAnomaly;
+  }
+
+  function fallbackPlanetState(planet, days) {
+    const meanMotion = Math.sqrt(GM_SUN / (planet.a * planet.a * planet.a));
+    const meanAnomaly = (planet.M0 + meanMotion * days) % (2 * Math.PI);
+    const eccentricAnomaly = solveKepler(meanAnomaly, planet.e);
+    const radiusAU = planet.a * (1 - planet.e * Math.cos(eccentricAnomaly));
+    const trueAnomaly = Math.atan2(Math.sqrt(1 - planet.e * planet.e) * Math.sin(eccentricAnomaly), Math.cos(eccentricAnomaly) - planet.e);
+
+    const orbitX = radiusAU * Math.cos(trueAnomaly);
+    const orbitY = radiusAU * Math.sin(trueAnomaly);
+
+    const argumentOfPerihelion = planet.perihelion - planet.node;
+    const cosOmega = Math.cos(argumentOfPerihelion);
+    const sinOmega = Math.sin(argumentOfPerihelion);
+    const cosNode = Math.cos(planet.node);
+    const sinNode = Math.sin(planet.node);
+    const cosInclination = Math.cos(planet.i);
+    const sinInclination = Math.sin(planet.i);
+
+    const xPeri = cosOmega * orbitX - sinOmega * orbitY;
+    const yPeri = sinOmega * orbitX + cosOmega * orbitY;
+    const xInclined = xPeri;
+    const yInclined = cosInclination * yPeri;
+    const zInclined = sinInclination * yPeri;
+
+    const x = cosNode * xInclined - sinNode * yInclined;
+    const y = sinNode * xInclined + cosNode * yInclined;
+    const z = zInclined;
+    const orbitalSpeedAuPerDay = Math.sqrt(GM_SUN * (2 / radiusAU - 1 / planet.a));
+
+    return {
+      x,
+      y,
+      z,
+      vx: -y * orbitalSpeedAuPerDay / Math.max(radiusAU, 1e-6),
+      vy: x * orbitalSpeedAuPerDay / Math.max(radiusAU, 1e-6),
+      vz: 0,
+      speedKmS: orbitalSpeedAuPerDay * AU_PER_DAY_TO_KM_S,
+      radiusAU
+    };
+  }
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf9f9f9);
+
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 15000);
   const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0xf9f9f9, 1);
   document.body.appendChild(renderer.domElement);
 
-  // Camera
-  const camState = { radius: 2.2, theta: Math.PI / 3, phi: Math.PI / 2.6, target: new THREE.Vector3(0,0,0) };
+  const camState = {
+    radius: 180,
+    theta: Math.PI / 3,
+    phi: Math.PI / 2.5,
+    target: new THREE.Vector3(0, 0, 0)
+  };
+
   function updateCamera() {
     const { radius, theta, phi, target } = camState;
     camera.position.x = target.x + radius * Math.sin(phi) * Math.cos(theta);
@@ -148,254 +397,378 @@
     camera.position.z = target.z + radius * Math.sin(phi) * Math.sin(theta);
     camera.lookAt(target);
   }
+
   updateCamera();
 
-  let dragging = false, lastX = 0, lastY = 0;
-  renderer.domElement.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
-  window.addEventListener('mouseup', () => dragging = false);
-  window.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    lastX = e.clientX; lastY = e.clientY;
-    camState.theta -= dx * 0.0045;
-    camState.phi = Math.min(Math.max(camState.phi - dy * 0.0045, 0.15), Math.PI - 0.15);
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  renderer.domElement.addEventListener('mousedown', (event) => {
+    dragging = true;
+    lastX = event.clientX;
+    lastY = event.clientY;
+  });
+
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
+
+  window.addEventListener('mousemove', (event) => {
+    if (!dragging) {
+      return;
+    }
+
+    const deltaX = event.clientX - lastX;
+    const deltaY = event.clientY - lastY;
+    lastX = event.clientX;
+    lastY = event.clientY;
+
+    camState.theta -= deltaX * 0.0045;
+    camState.phi = Math.min(Math.max(camState.phi - deltaY * 0.0045, 0.15), Math.PI - 0.15);
     updateCamera();
   });
-  renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); camState.radius = Math.min(Math.max(camState.radius * (1 + e.deltaY * 0.0012), 0.0008), 3000); updateCamera(); }, { passive: false });
+
+  renderer.domElement.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    camState.radius = Math.min(Math.max(camState.radius * (1 + event.deltaY * 0.0012), 10), 9000);
+    updateCamera();
+  }, { passive: false });
 
   let touchStart = null;
-  renderer.domElement.addEventListener('touchstart', e => { touchStart = e.touches[0]; }, {passive:true});
-  renderer.domElement.addEventListener('touchmove', e => { if (!touchStart) return; const t = e.touches[0]; const dx = t.clientX - touchStart.clientX, dy = t.clientY - touchStart.clientY; touchStart = t; camState.theta -= dx * 0.005; camState.phi = Math.min(Math.max(camState.phi - dy * 0.005, 0.15), Math.PI - 0.15); updateCamera(); }, {passive:true});
-  window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 
-  // Reference rings (ecliptic plane guides only)
-  const refGroup = new THREE.Group();
-  scene.add(refGroup);
-  [1, 10, 100, 1000, 10000].forEach(au => {
-    const radius = scaleAU(au);
-    const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI, false, 0);
-    const pts = curve.getPoints(160).map(p => new THREE.Vector3(p.x, 0, p.y));
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 });
-    refGroup.add(new THREE.LineLoop(geo, mat));
+  renderer.domElement.addEventListener('touchstart', (event) => {
+    touchStart = event.touches[0];
+  }, { passive: true });
+
+  renderer.domElement.addEventListener('touchmove', (event) => {
+    if (!touchStart) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchStart.clientX;
+    const deltaY = touch.clientY - touchStart.clientY;
+    touchStart = touch;
+
+    camState.theta -= deltaX * 0.005;
+    camState.phi = Math.min(Math.max(camState.phi - deltaY * 0.005, 0.15), Math.PI - 0.15);
+    updateCamera();
+  }, { passive: true });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Body helper
+  const referenceGroup = new THREE.Group();
+  scene.add(referenceGroup);
+
+  [1, 5, 10, 20, 30].forEach((orbitAU) => {
+    const orbitPoints = makeCircle(orbitAU * UNITS_PER_AU);
+    const orbitLine = createSceneLine(orbitPoints, 0x111111, 0.08);
+    referenceGroup.add(orbitLine);
+  });
+
+  const planeGuide = createSceneLine(makeCircle(32 * UNITS_PER_AU), 0x111111, 0.04);
+  referenceGroup.add(planeGuide);
+
   function makeBody(radiusUnits, tiltDeg, detail) {
-    const pivot = new THREE.Group(), tiltGroup = new THREE.Group();
+    const pivot = new THREE.Group();
+    const tiltGroup = new THREE.Group();
     tiltGroup.rotation.z = tiltDeg * DEG;
-    const geo = new THREE.IcosahedronGeometry(Math.max(radiusUnits, 1e-6), detail || 1);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-    const mesh = new THREE.Mesh(geo, mat);
+
+    const geometry = new THREE.IcosahedronGeometry(Math.max(radiusUnits, 1e-6), detail || 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x111111, wireframe: true });
+    const mesh = new THREE.Mesh(geometry, material);
+
     tiltGroup.add(mesh);
     pivot.add(tiltGroup);
+
     return { pivot, tiltGroup, mesh };
   }
 
-  const sunBody = makeBody(trueRadiusUnits(SUN_RADIUS_AU), 7.25, 2);
+  const sunBody = makeBody(bodyRadiusUnits(SUN_RADIUS_AU), 7.25, 2);
   scene.add(sunBody.pivot);
 
-  const planetBodies = {}, starBodies = {};
-  PLANETS.forEach(p => { const body = makeBody(trueRadiusUnits(p.radiusAU), p.tiltDeg, 1); scene.add(body.pivot); planetBodies[p.name] = body; });
-  STARS.forEach(s => { const body = makeBody(trueRadiusUnits(s.radiusAU), 0, 0); scene.add(body.pivot); starBodies[s.name] = body; });
+  const planetBodies = {};
+  const planetTrailData = {};
 
-  // Trail
-  const MAX_TRAIL = 900, trailPos = new Float32Array(MAX_TRAIL * 3), trailCol = new Float32Array(MAX_TRAIL * 3);
-  const trailGeo = new THREE.BufferGeometry();
-  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
-  trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 3));
-  trailGeo.setDrawRange(0, 0);
-  const trailLine = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true }));
-  scene.add(trailLine);
-
-  const trail = [];
-  function pushTrailPoint(x, y, z) {
-    trail.push({ x, y, z });
-    if (trail.length > MAX_TRAIL) trail.shift();
-    const n = trail.length;
-    for (let i = 0; i < n; i++) {
-      const p = trail[i];
-      trailPos[i*3] = p.x; trailPos[i*3+1] = p.y; trailPos[i*3+2] = p.z;
-      const t = i / Math.max(n - 1, 1);
-      trailCol[i*3] = t; trailCol[i*3+1] = t; trailCol[i*3+2] = t;
-    }
-    trailGeo.setDrawRange(0, n);
-    trailGeo.attributes.position.needsUpdate = true;
-    trailGeo.attributes.color.needsUpdate = true;
+  function createTrailMaterial(opacity) {
+    return new THREE.LineBasicMaterial({ color: 0x111111, transparent: true, opacity });
   }
 
-  // Simulation state
-  let simDays = 0, starYears = 0, running = true;
-
-  function resetState() { simDays = 0; starYears = 0; trail.length = 0; trailGeo.setDrawRange(0, 0); }
-
-  function solveKepler(M, e) {
-    let E = e < 0.8 ? M : Math.PI;
-    for (let i = 0; i < 8; i++) { E = E - (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); }
-    return E;
+  function createTrailGeometry() {
+    const maxTrailPoints = 480;
+    const trailPositions = new Float32Array(maxTrailPoints * 3);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    geometry.setDrawRange(0, 0);
+    return { geometry, trailPositions, maxTrailPoints };
   }
 
-  function computePlanetPosition(planet, days) {
-    const n = Math.sqrt(GM_SUN / (planet.a * planet.a * planet.a));
-    const M = (planet.M0 + n * days) % (2 * Math.PI);
-    const E = solveKepler(M, planet.e);
-    const rAU = planet.a * (1 - planet.e * Math.cos(E));
-    const nu = Math.atan2(Math.sqrt(1 - planet.e * planet.e) * Math.sin(E), Math.cos(E) - planet.e);
+  PLANETS.forEach((planet, index) => {
+    const body = makeBody(planet.bodyRadiusUnits, planet.tiltDeg, 1);
+    scene.add(body.pivot);
+    planetBodies[planet.name] = body;
 
-    // Position in orbital plane (2D)
-    const orbitX = rAU * Math.cos(nu), orbitY = rAU * Math.sin(nu);
-
-    // Rotation matrices (all angles in radians from PLANETS data)
-    const omega = planet.perihelion - planet.node;  // argument of perihelion
-    const cosOmega = Math.cos(omega), sinOmega = Math.sin(omega);
-    const cosNode = Math.cos(planet.node), sinNode = Math.sin(planet.node);
-    const cosI = Math.cos(planet.i), sinI = Math.sin(planet.i);
-
-    // Step 1: Rotate by argument of perihelion in orbital plane
-    const x_peri = cosOmega * orbitX - sinOmega * orbitY;
-    const y_peri = sinOmega * orbitX + cosOmega * orbitY;
-
-    // Step 2: Apply inclination rotation (around x-axis of rotated frame, which is line of nodes)
-    const x_incl = x_peri;
-    const y_incl = cosI * y_peri;
-    const z_incl = sinI * y_peri;
-
-    // Step 3: Rotate by longitude of ascending node (around z-axis)
-    const x = cosNode * x_incl - sinNode * y_incl;
-    const y = sinNode * x_incl + cosNode * y_incl;
-    const z = z_incl;
-
-    const vAuDay = Math.sqrt(GM_SUN * (2 / rAU - 1 / planet.a));
-    const vKmS = vAuDay * AU_PER_DAY_TO_KM_S;
-
-    return { x, y, z, rAU, vKmS, nu, M, E };
-  }
-
-  // HUD
-  const hudTime = document.getElementById('hud-time'), hudEarthR = document.getElementById('hud-earth-r');
-  const hudEarthV = document.getElementById('hud-earth-v'), hudYr = document.getElementById('hud-yr');
-  const hudProximaR = document.getElementById('hud-proxima-r');
+    const trail = createTrailGeometry();
+    const trailMesh = new THREE.Line(trail.geometry, createTrailMaterial(0.22 + index * 0.06));
+    scene.add(trailMesh);
+    planetTrailData[planet.name] = { ...trail, points: [] };
+  });
 
   const labelsLayer = document.getElementById('labels');
-  function makeLabel() { const d = document.createElement('div'); d.className = 'body-label'; labelsLayer.appendChild(d); return d; }
-  const sunLabel = makeLabel(), bodyLabels = {};
-  sunLabel.innerHTML = 'Sol<span class="sub">1.000 solar radii</span>';
-  PLANETS.forEach(p => { bodyLabels[p.name] = makeLabel(); });
-  STARS.forEach(s => { bodyLabels[s.name] = makeLabel(); });
-
-  function project(pivot, label) {
-    const v = pivot.position.clone().project(camera);
-    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-    const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-    if (v.z > 1 || v.z < -1) { label.style.display = 'none'; return; }
-    label.style.display = 'block';
-    label.style.left = x + 'px';
-    label.style.top = y + 'px';
+  function makeLabel() {
+    const label = document.createElement('div');
+    label.className = 'body-label';
+    labelsLayer.appendChild(label);
+    return label;
   }
 
-  // Controls
-  const speedSlider = document.getElementById('speed'), speedVal = document.getElementById('speedval');
-  speedSlider.addEventListener('input', () => { speedVal.textContent = speedSlider.value + ' d/s'; });
+  const sunLabel = makeLabel();
+  const planetLabels = {};
+  sunLabel.innerHTML = 'Sol<span class="sub">0, 0, 0 au</span>';
 
-  const starSlider = document.getElementById('staryrs'), starVal = document.getElementById('staryrsval');
-  starSlider.addEventListener('input', () => { starVal.textContent = starSlider.value + ' yr/s'; });
-
-  document.getElementById('pausebtn').addEventListener('click', (e) => {
-    running = !running;
-    e.target.textContent = running ? 'Pause' : 'Resume';
+  PLANETS.forEach((planet) => {
+    planetLabels[planet.name] = makeLabel();
   });
-  document.getElementById('resetbtn').addEventListener('click', resetState);
 
-  document.querySelectorAll('#focus button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const which = btn.getAttribute('data-focus').toLowerCase();
-      if (which === 'sun') { camState.target.copy(sunBody.pivot.position); camState.radius = 1.2; }
-      else {
-        const pname = which.split(' ')[0].charAt(0).toUpperCase() + which.split(' ')[0].slice(1);
-        if (planetBodies[pname]) { camState.target.copy(planetBodies[pname].pivot.position); camState.radius = 0.02; }
-        else if (which.includes('proxima')) { camState.target.copy(starBodies['Proxima Centauri'].pivot.position); camState.radius = 0.25; }
+  function project(pivot, label) {
+    const projected = pivot.position.clone().project(camera);
+    if (projected.z > 1 || projected.z < -1) {
+      label.style.display = 'none';
+      return;
+    }
+
+    const x = (projected.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-projected.y * 0.5 + 0.5) * window.innerHeight;
+    label.style.display = 'block';
+    label.style.left = `${x}px`;
+    label.style.top = `${y}px`;
+  }
+
+  const hudTime = document.getElementById('hud-time');
+  const hudEarthXyz = document.getElementById('hud-earth-xyz');
+  const hudEarthVxyz = document.getElementById('hud-earth-vxyz');
+  const hudSync = document.getElementById('hud-sync');
+  const speedSlider = document.getElementById('speed');
+  const speedVal = document.getElementById('speedval');
+
+  speedSlider.addEventListener('input', () => {
+    speedVal.textContent = `${speedSlider.value} d/s`;
+  });
+
+  const resetBtn = document.getElementById('resetbtn');
+  const pauseBtn = document.getElementById('pausebtn');
+  const syncBtn = document.getElementById('syncbtn');
+
+  let running = true;
+  let simulationDays = 0;
+  let lastLiveSyncText = 'waiting';
+
+  pauseBtn.addEventListener('click', () => {
+    running = !running;
+    pauseBtn.textContent = running ? 'Pause' : 'Resume';
+  });
+
+  resetBtn.addEventListener('click', () => {
+    simulationDays = 0;
+    Object.values(planetTrailData).forEach((trail) => {
+      trail.points.length = 0;
+      trail.geometry.setDrawRange(0, 0);
+      trail.geometry.attributes.position.needsUpdate = true;
+    });
+  });
+
+  const planetStates = {};
+
+  PLANETS.forEach((planet) => {
+    planetStates[planet.name] = getPlanetState(planet, 0);
+  });
+
+  function getPlanetState(planet, offsetDays) {
+    if (planet.liveVector) {
+      const x = planet.liveVector.x + planet.liveVector.vx * offsetDays;
+      const y = planet.liveVector.y + planet.liveVector.vy * offsetDays;
+      const z = planet.liveVector.z + planet.liveVector.vz * offsetDays;
+      const speedAuPerDay = Math.sqrt(planet.liveVector.vx ** 2 + planet.liveVector.vy ** 2 + planet.liveVector.vz ** 2);
+
+      return {
+        x,
+        y,
+        z,
+        vx: planet.liveVector.vx,
+        vy: planet.liveVector.vy,
+        vz: planet.liveVector.vz,
+        speedKmS: speedAuPerDay * AU_PER_DAY_TO_KM_S,
+        radiusAU: Math.sqrt(x * x + y * y + z * z)
+      };
+    }
+
+    const fallback = fallbackPlanetState(planet, offsetDays);
+    return {
+      x: fallback.x,
+      y: fallback.y,
+      z: fallback.z,
+      vx: fallback.vx,
+      vy: fallback.vy,
+      vz: fallback.vz,
+      speedKmS: fallback.speedKmS,
+      radiusAU: fallback.radiusAU
+    };
+  }
+
+  function pushTrailPoint(trail, x, y, z) {
+    trail.points.push({ x, y, z });
+    if (trail.points.length > trail.maxTrailPoints) {
+      trail.points.shift();
+    }
+
+    const count = trail.points.length;
+    for (let index = 0; index < count; index++) {
+      const point = trail.points[index];
+      trail.trailPositions[index * 3] = point.x;
+      trail.trailPositions[index * 3 + 1] = point.y;
+      trail.trailPositions[index * 3 + 2] = point.z;
+    }
+
+    trail.geometry.setDrawRange(0, count);
+    trail.geometry.attributes.position.needsUpdate = true;
+  }
+
+  function updateSceneFromStates(offsetDays) {
+    const earth = planetStates.Earth;
+
+    hudTime.textContent = `${offsetDays.toFixed(1)} d`;
+    hudEarthXyz.textContent = `${formatNumber(earth.x, 3)}, ${formatNumber(earth.y, 3)}, ${formatNumber(earth.z, 3)} au`;
+    hudEarthVxyz.textContent = `${formatNumber(earth.vx, 4)}, ${formatNumber(earth.vy, 4)}, ${formatNumber(earth.vz, 4)} au/day`;
+    hudSync.textContent = lastLiveSyncText;
+
+    sunBody.mesh.rotation.y = (2 * Math.PI / 24.47) * offsetDays;
+    project(sunBody.pivot, sunLabel);
+
+    PLANETS.forEach((planet) => {
+      const state = planetStates[planet.name];
+      const scaledX = state.x * UNITS_PER_AU;
+      const scaledY = state.y * UNITS_PER_AU;
+      const scaledZ = state.z * UNITS_PER_AU;
+      const body = planetBodies[planet.name];
+
+      body.pivot.position.set(scaledX, scaledY, scaledZ);
+      body.mesh.rotation.y = (2 * Math.PI / planet.rotDays) * offsetDays;
+
+      const label = planetLabels[planet.name];
+      label.innerHTML = `${planet.name}<span class="sub">x ${formatNumber(state.x, 3)} · y ${formatNumber(state.y, 3)} · z ${formatNumber(state.z, 3)} au</span><span class="sub">vx ${formatNumber(state.vx, 4)} · vy ${formatNumber(state.vy, 4)} · vz ${formatNumber(state.vz, 4)} au/day</span>`;
+      project(body.pivot, label);
+
+      pushTrailPoint(planetTrailData[planet.name], scaledX, scaledY, scaledZ);
+    });
+  }
+
+  async function refreshLiveDatabase() {
+    const queryTimeMs = Date.now();
+    hudSync.textContent = 'syncing';
+
+    const results = [];
+
+    for (const planet of PLANETS) {
+      let lastError = null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const response = await fetch(buildHorizonsUrl(planet, queryTimeMs));
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const payload = await response.json();
+          if (payload.error) {
+            throw new Error(payload.error);
+          }
+
+          results.push({ planet, vector: parseHorizonsVector(payload.result), fetchedAtMs: queryTimeMs });
+          lastError = null;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) {
+            await wait(250 * (attempt + 1));
+          }
+        }
+      }
+
+      if (lastError) {
+        results.push({ planet, error: lastError });
+      }
+
+      await wait(120);
+    }
+
+    let successCount = 0;
+
+    results.forEach((result) => {
+      if (result.vector) {
+        successCount += 1;
+        result.planet.liveVector = {
+          x: result.vector.x,
+          y: result.vector.y,
+          z: result.vector.z,
+          vx: result.vector.vx,
+          vy: result.vector.vy,
+          vz: result.vector.vz
+        };
+        planetStates[result.planet.name] = getPlanetState(result.planet, simulationDays);
+      }
+    });
+
+    lastLiveSyncText = `${new Date(queryTimeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${successCount}/${PLANETS.length} ok`;
+    hudSync.textContent = lastLiveSyncText;
+  }
+
+  syncBtn.addEventListener('click', () => {
+    refreshLiveDatabase();
+  });
+
+  document.querySelectorAll('#focus button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const focusName = button.getAttribute('data-focus');
+      if (focusName === 'sun') {
+        camState.target.set(0, 0, 0);
+        camState.radius = 160;
+      } else if (planetBodies[focusName]) {
+        camState.target.copy(planetBodies[focusName].pivot.position);
+        camState.radius = focusName === 'Neptune' ? 70 : 40;
       }
       updateCamera();
     });
   });
 
-  // Animation
+  setInterval(() => {
+    refreshLiveDatabase();
+  }, LIVE_REFRESH_MS);
+
+  await refreshLiveDatabase();
+
   const clock = new THREE.Clock();
 
   function animate() {
     requestAnimationFrame(animate);
-    const realDt = Math.min(clock.getDelta(), 0.1);
 
+    const deltaSeconds = Math.min(clock.getDelta(), 0.1);
     if (running) {
-      const daysPerSec = parseFloat(speedSlider.value);
-      simDays += realDt * daysPerSec;
-      const yrPerSec = parseFloat(starSlider.value);
-      starYears += realDt * yrPerSec;
+      simulationDays += deltaSeconds * parseFloat(speedSlider.value);
     }
 
-    // Update planets (3D Kepler orbits)
-    PLANETS.forEach(p => {
-      const pos = computePlanetPosition(p, simDays);
-      const dist = Math.sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
-      const scaled = scaleAU(dist);
-      const body = planetBodies[p.name];
-      body.pivot.position.set(scaled * pos.x / dist, scaled * pos.y / dist, scaled * pos.z / dist);
-      body.mesh.rotation.y = (2 * Math.PI / p.rotDays) * simDays;
-
-      if (p.name === 'Earth') {
-        hudEarthR.textContent = pos.rAU.toFixed(5) + ' AU';
-        hudEarthV.textContent = pos.vKmS.toFixed(2) + ' km/s';
-        pushTrailPoint(body.pivot.position.x, body.pivot.position.y, body.pivot.position.z);
-      }
-
-      if (bodyLabels[p.name]) {
-        bodyLabels[p.name].innerHTML = p.name + '<span class="sub">' + pos.rAU.toFixed(3) + ' AU · ' + pos.vKmS.toFixed(1) + ' km/s</span>';
-        project(body.pivot, bodyLabels[p.name]);
-      }
+    PLANETS.forEach((planet) => {
+      planetStates[planet.name] = getPlanetState(planet, simulationDays);
     });
 
-    sunBody.mesh.rotation.y = (2 * Math.PI / 24.47) * simDays;
-    project(sunBody.pivot, sunLabel);
-
-    // Update stars (linear space motion)
-    STARS.forEach(s => {
-      // Update position based on proper motion and radial velocity
-      // Convert starYears to days for radial velocity integration
-      const starDays = starYears * 365.25;
-
-      // Radial component: distance grows/shrinks
-      const rAU_current = s.distAU0 + s.radialAuPerYr * starYears;
-
-      // Tangential component: star moves perpendicular to radial direction
-      // theta stays at s.theta0 (proper motion direction in 2D XZ plane)
-      // position rotates as proper motion advances
-      const theta_current = s.theta0 + (s.vTransAuPerYr * starYears) / s.distAU0;
-
-      s.x = rAU_current * Math.cos(theta_current);
-      s.z = rAU_current * Math.sin(theta_current);
-      s.y = 0;  // Stars remain in ecliptic plane (XZ plane)
-
-      const distAU = Math.sqrt(s.x*s.x + s.y*s.y + s.z*s.z);
-      const scaled = scaleAU(distAU);
-      const body = starBodies[s.name];
-      body.pivot.position.set(scaled * s.x / distAU, scaled * s.y / distAU, scaled * s.z / distAU);
-      body.mesh.rotation.y = (2 * Math.PI / s.rotDays) * simDays;
-
-      if (bodyLabels[s.name]) {
-        const ly = (distAU / LY_AU);
-        bodyLabels[s.name].innerHTML = s.name + '<span class="sub">' + ly.toFixed(3) + ' ly</span>';
-        project(body.pivot, bodyLabels[s.name]);
-      }
-    });
-
-    // HUD
-    hudTime.textContent = simDays.toFixed(1) + ' d (' + (simDays/365.25).toFixed(2) + ' yr)';
-    hudYr.textContent = starYears.toFixed(0) + ' yr';
-    const proxDistAU = Math.sqrt(STARS[0].x*STARS[0].x + STARS[0].y*STARS[0].y + STARS[0].z*STARS[0].z);
-    hudProximaR.textContent = (proxDistAU / LY_AU).toFixed(4) + ' ly';
-
+    updateSceneFromStates(simulationDays);
     renderer.render(scene, camera);
   }
+
   animate();
 })();
 </script>
