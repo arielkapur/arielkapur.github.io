@@ -905,8 +905,16 @@
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && infoPanel.classList.contains('open')) closeInfoPanel();
     if (e.key === 'Tab' && infoPanel.classList.contains('open')) {
-      e.preventDefault();
-      infoClose.focus();
+      const focusable = [...infoPanel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!focusable.length || (e.shiftKey && document.activeElement === first)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   });
 
@@ -1088,37 +1096,38 @@
     hudSync.textContent = 'syncing';
 
     let completedCount = 0;
-    const results = await Promise.all(PLANETS.map(async (planet) => {
-      let lastError = null;
+    const results = await Promise.all(PLANETS.map(async (planet, index) => {
+      await wait(index * 120);
+      try {
+        let lastError = null;
 
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const response = await fetch(buildHorizonsUrl(planet, queryTimeMs));
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const response = await fetch(buildHorizonsUrl(planet, queryTimeMs));
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
 
-          const payload = await response.json();
-          if (payload.error) {
-            throw new Error(payload.error);
-          }
+            const payload = await response.json();
+            if (payload.error) {
+              throw new Error(payload.error);
+            }
 
-          return { planet, vector: parseHorizonsVector(payload.result), fetchedAtMs: queryTimeMs };
-        } catch (error) {
-          lastError = error;
-          if (attempt < 2) {
-            await wait(250 * (attempt + 1));
+            return { planet, vector: parseHorizonsVector(payload.result), fetchedAtMs: queryTimeMs };
+          } catch (error) {
+            lastError = error;
+            if (attempt < 2) {
+              await wait(250 * (attempt + 1));
+            }
           }
         }
+
+        return { planet, error: lastError };
+      } finally {
+        completedCount += 1;
+        setLoadingProgress(completedCount / PLANETS.length);
       }
-
-      return { planet, error: lastError };
     }));
-
-    results.forEach(() => {
-      completedCount += 1;
-      setLoadingProgress(completedCount / PLANETS.length);
-    });
 
     let successCount = 0;
 
