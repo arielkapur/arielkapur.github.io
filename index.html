@@ -6,7 +6,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     
-    <title>universe</title>
+    <title>Ariel Kapur — Software Engineer and Designer</title>
+    <meta name="description" content="Ariel Kapur is a software engineer and designer building interactive digital experiences.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://arielkapur.github.io/">
+    <meta property="og:title" content="Ariel Kapur — Software Engineer and Designer">
+    <meta property="og:description" content="Interactive work by Ariel Kapur, software engineer and designer.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://arielkapur.github.io/">
+    <meta name="twitter:card" content="summary">
     
     <script>document.documentElement.classList.replace('no-js', 'js');</script>
 
@@ -22,7 +30,7 @@
     <!-- cursor element removed to avoid FOUC; cursor.js will create it dynamically -->
     <header data-transition="text">
         <h1 class="name">
-            <a href="https://www.instagram.com/arielkapur/">ariel kapur</a>
+            <a href="https://www.instagram.com/arielkapur/" rel="me">ariel kapur</a>
         </h1>
         <p class="pixelitalic">
             i have a website. it is a work in progress. <br />
@@ -43,60 +51,12 @@
             <h2 class="subheading">about</h2>
 
             <p class="pixelitalic">
-                currently working on a predictive real-time Solar System map, </br> complete with educational content and fun facts about the local planetary bodies <br />
+                Currently working on a predictive, real-time Solar System map, complete with educational content and fun facts about local planetary bodies.
             </p>
 
         </section>
 
     </main>
-
-    <script>
-        (function fitNameToSeventh() {
-            const el = document.querySelector('.name');
-            if (!el) return;
-
-            function fit() {
-                const containerWidth = Math.floor(window.innerWidth / 7);
-                el.style.width = containerWidth + 'px';
-
-                // binary-search for the largest font-size (px) that fits without wrapping
-                let low = 6, high = 1000, best = 6;
-                while (low <= high) {
-                    const mid = Math.floor((low + high) / 2);
-                    el.style.fontSize = mid + 'px';
-                    if (el.scrollWidth <= el.clientWidth) {
-                        best = mid;
-                        low = mid + 1;
-                    } else {
-                        high = mid - 1;
-                    }
-                }
-                const finalNamePx = Math.max(6, best);
-                el.style.fontSize = finalNamePx + 'px';
-
-                // Now adjust subheadings and pixelitalic paragraphs relative to name size
-                const nameSize = finalNamePx;
-                // subheading: 6/7 of name size, paragraph: 5/7 of name size
-                const subSize = Math.max(10, Math.floor(nameSize * 6 / 7));
-                const paraSize = Math.max(10, Math.floor(nameSize * 5 / 7));
-
-                document.querySelectorAll('.subheading').forEach(h => {
-                    h.style.fontSize = subSize + 'px';
-                });
-                document.querySelectorAll('.pixelitalic').forEach(p => {
-                    p.style.fontSize = paraSize + 'px';
-                });
-            }
-
-            if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(fit);
-            } else {
-                window.addEventListener('load', fit);
-                setTimeout(fit, 0);
-            }
-            window.addEventListener('resize', fit);
-        })();
-    </script>
 
     <script src="cursor.js"></script>
     <script src="transitions.js"></script>

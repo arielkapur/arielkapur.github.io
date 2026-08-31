@@ -31,8 +31,7 @@ const CURSOR_ID = 'cursor';
             return;
         }
 
-        // hide native cursor
-        document.body.style.cursor = 'none';
+        document.body.classList.add('custom-cursor-enabled');
 
         // ensure basic styles (in case CSS didn't load yet)
         Object.assign(cursor.style, {
