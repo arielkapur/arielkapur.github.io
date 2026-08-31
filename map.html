@@ -904,6 +904,10 @@
   infoClose.addEventListener('click', closeInfoPanel);
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && infoPanel.classList.contains('open')) closeInfoPanel();
+    if (e.key === 'Tab' && infoPanel.classList.contains('open')) {
+      e.preventDefault();
+      infoClose.focus();
+    }
   });
 
   const labelsLayer = document.getElementById('labels');
