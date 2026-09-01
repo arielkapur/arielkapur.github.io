@@ -1,7 +1,7 @@
 ﻿body {
     background-color: #f9f9f9;
     color: #111;
-    font-family: Georgia, serif;
+    font-family: "Source Serif 4", Georgia, serif;
 
     text-align: center;
 
@@ -149,7 +149,8 @@ a, a:link, a:visited, a:hover, a:focus, a:active {
    Sizes will be adjusted by JS so they never exceed .name's pixel size. */
 .subheading,
 h2.subheading {
-    font-family: "vipnagorgialla", serif !important;
+    font-family: "Work Sans", sans-serif !important;
+    font-weight: 600 !important;
     line-height: 1;
     margin: 12px 0;
     /* script will override to a value <= name size; provide fallback */
@@ -158,7 +159,7 @@ h2.subheading {
 
 .pixelitalic,
 p.pixelitalic {
-    font-family: "cavalhatriz", monospace !important;
+    font-family: "Source Serif 4", serif !important;
     line-height: 1.2;
     margin: 8px 0;
     font-size: 15px !important;
@@ -166,13 +167,13 @@ p.pixelitalic {
 
 /* If links or other inline elements should use pixelitalic, allow applying class to them too */
 .pixelitalic-inline {
-    font-family: "cavalhatriz", monospace !important;
+    font-family: "Source Serif 4", serif !important;
     font-style: italic !important;
 }
 
 .dos,
 p.dos {
-    font-family: "dos", monospace !important;
+    font-family: "Source Serif 4", serif !important;
     line-height: 1.2;
     margin: 8px 0;
     font-size: 15px !important;
@@ -180,7 +181,7 @@ p.dos {
 
 /* If links or other inline elements should use pixelitalic, allow applying class to them too */
 .dos-inline {
-    font-family: "dos", monospace !important;
+    font-family: "Source Serif 4", serif !important;
     font-style: italic !important;
 }
 
