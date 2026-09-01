@@ -1,6 +1,6 @@
 # 2/09/26
 ## Psychological refresh on projects current
-### Solar system map sort of ditched for now - not a super interested idea outside of a basic physical web simulation. 
+### Solar system map sort of ditched for now - not a super interesting idea outside of a basic physical web simulation. 
 As far as interactivity goes a game would be much more engaging.
 
 ### The Agent has destroyed my original web design because I did not properly review pull requests.
