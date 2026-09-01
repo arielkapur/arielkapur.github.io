@@ -4,7 +4,7 @@
 
 ### Menus (on planet selection)
 - Troubleshoot menus not showing up sometimes
-- Fix pronunciations in menus - 'MAHRZ' to  (/mɑːrz/) *or* (/mɑːz/)
+- Fix pronunciations in menus - 'MAHRZ' → `/mɑːrz/` (done)
 - Info box redesign - discrete boxes with padding on all sides filling 50% of screen
 
 ### WebGL camera movement & controls changes
