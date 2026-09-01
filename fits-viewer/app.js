@@ -3,8 +3,7 @@
  *
  * Application logic for the estack FiTS Viewer MVP: wires together file
  * loading, stacking, the Group -> Layer -> Sublayer hierarchy, filter
- * isolation, hex color compositing, the RGB curves panel and the AI
- * Companion tips panel. Vanilla JS, no build step, no external deps.
+ * isolation, hex color compositing, and the RGB curves panel.
  */
 
 (function () {
@@ -53,8 +52,10 @@
     var compositeStatus = document.getElementById('composite-status');
     var curveCanvas = document.getElementById('curve-canvas');
     var curvesResetBtn = document.getElementById('curves-reset-btn');
-    var aiTipsEl = document.getElementById('ai-tips');
-    var aiTipBtn = document.getElementById('ai-tip-btn');
+    var dropZone = document.getElementById('drop-zone');
+    var schemeFilterEl = document.getElementById('scheme-filter');
+    var schemeColorEl = document.getElementById('scheme-color');
+    var schemeHexEl = document.getElementById('scheme-hex');
 
     // ---------------------------------------------------------------------
     // Frame loading
@@ -88,6 +89,34 @@
         };
     }
 
+    function inferFilterFromFilename(name) {
+        var normalized = String(name).toUpperCase().replace(/[^A-Z0-9]+/g, ' ');
+        if (/(^| )(NII|N II|N2|NITROGEN ?III)( |$)/.test(normalized)) return 'NII';
+        if (/(^| )(HALPHA|H ALPHA|HA)( |$)/.test(normalized)) return 'H-alpha';
+        if (/(^| )(HBETA|H BETA|HB)( |$)/.test(normalized)) return 'H-beta';
+        if (/(^| )(OIII|O III|O3|OXYGEN ?III)( |$)/.test(normalized)) return 'OIII';
+        if (/(^| )(SII|S2)( |$)/.test(normalized)) return 'SII';
+        return null;
+    }
+
+    function autoOrganizeFrame(frame) {
+        var filter = frame.filter || 'Unfiltered';
+        var group = groups.filter(function (item) { return item.name === 'Spectra'; })[0];
+        if (!group) {
+            group = { id: nextId('group-'), name: 'Spectra', visible: true, layers: [] };
+            groups.push(group);
+        }
+        var layer = group.layers.filter(function (item) { return item.name === filter; })[0];
+        if (!layer) {
+            layer = { id: nextId('layer-'), name: filter, visible: true, sublayers: [] };
+            group.layers.push(layer);
+        }
+        if (!layer.sublayers.some(function (item) { return item.frameId === frame.id; })) {
+            layer.sublayers.push({ id: nextId('sub-'), frameId: frame.id, visible: true });
+        }
+        renderHierarchy();
+    }
+
     function renderFrameListItem(frame) {
         var li = frameListEl.querySelector('[data-frame-id="' + frame.id + '"]');
         if (!li) {
@@ -99,7 +128,7 @@
                 '<span class="fits-frame-status"></span>' +
                 '<progress class="fits-progress" max="100" value="0"></progress>' +
                 '<select class="frame-filter">' +
-                    ['H-alpha', 'H-beta', 'OIII', 'SII', 'Luminance', 'Custom', 'Unfiltered'].map(function (label) {
+                    ['H-alpha', 'H-beta', 'OIII', 'NII', 'SII', 'Luminance', 'Custom', 'Unfiltered'].map(function (label) {
                         return '<option value="' + label + '">' + label + '</option>';
                     }).join('') +
                 '</select>' +
@@ -111,7 +140,7 @@
                 frame.filter = e.target.value === 'Unfiltered' ? null : e.target.value;
                 recomposite();
                 renderFilterToggles();
-                renderAiTips();
+                renderColorControls();
             });
             li.querySelector('.frame-color').addEventListener('input', function (e) {
                 frame.color = e.target.value;
@@ -151,6 +180,7 @@
         Array.prototype.forEach.call(fileList, function (file) {
             var frame = createFrameRecord(file.name);
             frame.status = 'loading';
+            frame.filter = inferFilterFromFilename(file.name);
             frames.set(frame.id, frame);
             renderFrameListItem(frame);
 
@@ -169,7 +199,8 @@
                 if (result.filter) frame.filter = result.filter;
                 renderFrameListItem(frame);
                 renderFilterToggles();
-                renderAiTips();
+                autoOrganizeFrame(frame);
+                renderColorControls();
                 recomposite();
             }).catch(function (err) {
                 frame.status = 'error';
@@ -182,6 +213,22 @@
     fileInput.addEventListener('change', function (e) {
         if (e.target.files && e.target.files.length) loadFiles(e.target.files);
         fileInput.value = '';
+    });
+
+    dropZone.addEventListener('click', function (e) {
+        if (e.target.tagName !== 'LABEL') fileInput.click();
+    });
+    dropZone.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+    ['dragenter', 'dragover'].forEach(function (eventName) {
+        dropZone.addEventListener(eventName, function (e) { e.preventDefault(); dropZone.classList.add('dragging'); });
+    });
+    ['dragleave', 'drop'].forEach(function (eventName) {
+        dropZone.addEventListener(eventName, function (e) { e.preventDefault(); dropZone.classList.remove('dragging'); });
+    });
+    dropZone.addEventListener('drop', function (e) {
+        if (e.dataTransfer.files.length) loadFiles(e.dataTransfer.files);
     });
 
     // ---------------------------------------------------------------------
@@ -283,7 +330,7 @@
             frames.set(stackFrame.id, stackFrame);
             renderStackListItem(stackFrame);
             renderFilterToggles();
-            renderAiTips();
+            renderColorControls();
             recomposite();
         }).catch(function (err) {
             alert('Stacking failed: ' + (err && err.message ? err.message : err));
@@ -465,6 +512,45 @@
         });
     }
 
+    function renderColorControls() {
+        var labels = Array.from(new Set(Array.from(frames.values()).map(function (frame) {
+            return frame.filter || 'Unfiltered';
+        })));
+        var prior = schemeFilterEl.value;
+        schemeFilterEl.innerHTML = '';
+        labels.forEach(function (label) {
+            var option = document.createElement('option');
+            option.value = label;
+            option.textContent = label;
+            schemeFilterEl.appendChild(option);
+        });
+        if (labels.indexOf(prior) !== -1) schemeFilterEl.value = prior;
+        syncColorControl();
+    }
+
+    function syncColorControl() {
+        var selected = Array.from(frames.values()).filter(function (frame) {
+            return (frame.filter || 'Unfiltered') === schemeFilterEl.value;
+        })[0];
+        var color = selected ? selected.color : '#fefefe';
+        schemeColorEl.value = color;
+        schemeHexEl.textContent = color.toUpperCase();
+    }
+
+    schemeFilterEl.addEventListener('change', syncColorControl);
+    schemeColorEl.addEventListener('input', function () {
+        var color = schemeColorEl.value;
+        Array.from(frames.values()).forEach(function (frame) {
+            if ((frame.filter || 'Unfiltered') === schemeFilterEl.value) {
+                frame.color = color;
+                var input = frameListEl.querySelector('[data-frame-id="' + frame.id + '"] .frame-color');
+                if (input) input.value = color;
+            }
+        });
+        schemeHexEl.textContent = color.toUpperCase();
+        recomposite();
+    });
+
     // ---------------------------------------------------------------------
     // Compositing
     // ---------------------------------------------------------------------
@@ -576,30 +662,6 @@
     }
 
     // ---------------------------------------------------------------------
-    // AI Companion
-    // ---------------------------------------------------------------------
-
-    function renderAiTips() {
-        var state = {
-            frames: Array.from(frames.values()).filter(function (f) { return f.status === 'ready'; }),
-            stacks: Array.from(frames.values()).filter(function (f) { return f.isStack; })
-        };
-        var tips = AiCompanion.suggest(state);
-        aiTipsEl.innerHTML = '';
-        tips.forEach(function (tip) {
-            var li = document.createElement('li');
-            li.textContent = tip;
-            aiTipsEl.appendChild(li);
-        });
-    }
-
-    aiTipBtn.addEventListener('click', function () {
-        var li = document.createElement('li');
-        li.textContent = AiCompanion.randomTip();
-        aiTipsEl.insertBefore(li, aiTipsEl.firstChild);
-    });
-
-    // ---------------------------------------------------------------------
     // Init
     // ---------------------------------------------------------------------
 
@@ -607,7 +669,7 @@
         renderHierarchy();
         renderFilterToggles();
         initCurves();
-        renderAiTips();
+        renderColorControls();
         recomposite();
     }
 
