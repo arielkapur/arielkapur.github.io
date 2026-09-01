@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>the solar system</title>
+<title>Interactive Solar System Map — Ariel Kapur</title>
+<meta name="description" content="Explore a live, interactive visualisation of the Solar System using JPL Horizons planetary vectors.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://arielkapur.github.io/map.html">
+<meta property="og:title" content="Interactive Solar System Map">
+<meta property="og:description" content="Explore a live visualisation of the Solar System.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://arielkapur.github.io/map.html">
+<meta name="twitter:card" content="summary">
 <style>
   :root {
     --bg: #f9f9f9;
@@ -277,6 +285,12 @@
       max-width: none;
       padding: 48px 24px;
     }
+    #hud { top: 10px; left: 10px; max-width: calc(100vw - 20px); font-size: 10px; }
+    #title, #scalehelp { display: none; }
+    #focus { left: 10px; bottom: 82px; gap: 4px; max-width: calc(100vw - 20px); }
+    #controls { left: 10px; bottom: 10px; gap: 4px; max-width: calc(100vw - 20px); }
+    #controls button, #focus button { padding: 6px 7px; font-size: 10px; }
+    #controls input[type=range] { width: 90px; }
   }
 
   #loading-overlay {
@@ -334,7 +348,8 @@
   <div id="loading-bar"><div id="loading-bar-fill"></div></div>
 </div>
 
-<div id="hud">
+<main aria-label="Interactive Solar System map">
+<div id="hud" aria-live="polite">
   <div class="row"><span class="label">t </span><span class="val" id="hud-time">0.0 d</span></div>
   <div class="row"><span class="label">earth xyz </span><span class="val" id="hud-earth-xyz">—</span></div>
   <div class="row"><span class="label">earth vxyz </span><span class="val" id="hud-earth-vxyz">—</span></div>
@@ -342,12 +357,12 @@
   <div class="row"><span class="label">source </span><span class="val" id="hud-source">JPL Horizons live vectors</span></div>
 </div>
 
-<div id="title">
-  <span class="main">Solar System</span>
+<header id="title">
+  <h1 class="main">Solar System</h1>
    heliocentric x/y/z in Astronomical Units · live JPL Horizons data
-</div>
+</header>
 
-<div id="focus">
+<nav id="focus" aria-label="Focus on a celestial body">
   <button data-focus="sun">Sol</button>
   <button data-focus="Mercury">Mercury</button>
   <button data-focus="Venus">Venus</button>
@@ -357,7 +372,7 @@
   <button data-focus="Saturn">Saturn</button>
   <button data-focus="Uranus">Uranus</button>
   <button data-focus="Neptune">Neptune</button>
-</div>
+</nav>
 
 <div id="controls">
   <button id="pausebtn">Pause</button>
@@ -377,10 +392,11 @@
 
 <div id="labels"></div>
 
-<div id="info-panel" aria-hidden="true">
+<section id="info-panel" role="dialog" aria-modal="true" aria-labelledby="info-heading" aria-hidden="true">
   <button id="info-close" aria-label="Close panel" type="button">&times;</button>
   <div id="info-content"></div>
-</div>
+</section>
+</main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -854,6 +870,7 @@
   const infoPanel = document.getElementById('info-panel');
   const infoContent = document.getElementById('info-content');
   const infoClose = document.getElementById('info-close');
+  let lastFocusedElement = null;
 
   function openInfoPanel(name) {
     const info = BODY_INFO[name];
@@ -861,8 +878,9 @@
     const compRows = info.composition.map((c) => `
       <div class="data-row"><span class="k">${c.label}</span><span class="v">${c.pct}%</span></div>
     `).join('');
+    lastFocusedElement = document.activeElement;
     infoContent.innerHTML = `
-      <h2>${name === 'Sol' ? 'Sol (the Sun)' : name}</h2>
+      <h2 id="info-heading">${name === 'Sol' ? 'Sol (the Sun)' : name}</h2>
       <p class="pronunciation">${info.pronunciation}</p>
       <h3>Essential data</h3>
       <div class="data-row"><span class="k">Diameter</span><span class="v">${info.diameterKm.toLocaleString()} km</span></div>
@@ -874,16 +892,34 @@
     `;
     infoPanel.classList.add('open');
     infoPanel.setAttribute('aria-hidden', 'false');
+    infoClose.focus();
   }
 
   function closeInfoPanel() {
     infoPanel.classList.remove('open');
     infoPanel.setAttribute('aria-hidden', 'true');
+    if (lastFocusedElement && document.contains(lastFocusedElement)) lastFocusedElement.focus();
   }
 
   infoClose.addEventListener('click', closeInfoPanel);
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeInfoPanel();
+    if (e.key === 'Escape' && infoPanel.classList.contains('open')) closeInfoPanel();
+    if (e.key === 'Tab' && infoPanel.classList.contains('open')) {
+      const focusable = [...infoPanel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+      if (!focusable.length) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 
   const labelsLayer = document.getElementById('labels');
@@ -1063,41 +1099,39 @@
     const queryTimeMs = Date.now();
     hudSync.textContent = 'syncing';
 
-    const results = [];
+    let completedCount = 0;
+    const results = await Promise.all(PLANETS.map(async (planet, index) => {
+      await wait(index * 120);
+      try {
+        let lastError = null;
 
-    for (const planet of PLANETS) {
-      let lastError = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const response = await fetch(buildHorizonsUrl(planet, queryTimeMs));
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
 
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const response = await fetch(buildHorizonsUrl(planet, queryTimeMs));
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
+            const payload = await response.json();
+            if (payload.error) {
+              throw new Error(payload.error);
+            }
 
-          const payload = await response.json();
-          if (payload.error) {
-            throw new Error(payload.error);
-          }
-
-          results.push({ planet, vector: parseHorizonsVector(payload.result), fetchedAtMs: queryTimeMs });
-          lastError = null;
-          break;
-        } catch (error) {
-          lastError = error;
-          if (attempt < 2) {
-            await wait(250 * (attempt + 1));
+            return { planet, vector: parseHorizonsVector(payload.result), fetchedAtMs: queryTimeMs };
+          } catch (error) {
+            lastError = error;
+            if (attempt < 2) {
+              await wait(250 * (attempt + 1));
+            }
           }
         }
-      }
 
-      if (lastError) {
-        results.push({ planet, error: lastError });
+        return { planet, error: lastError };
+      } finally {
+        completedCount += 1;
+        setLoadingProgress(completedCount / PLANETS.length);
       }
-
-      setLoadingProgress(results.length / PLANETS.length);
-      await wait(120);
-    }
+    }));
 
     let successCount = 0;
 

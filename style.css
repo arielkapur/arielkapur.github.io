@@ -12,8 +12,6 @@
 
 /* Custom cursor: hidden by default until JS enables it */
 @media (pointer: fine) and (hover: hover) {
-    body { cursor: none; }
-
     /* Position the container fixed to the viewport */
     #cursor {
         position: fixed;
@@ -49,14 +47,15 @@
     }
 
     /* Prevent browser from showing its own pointer/hand over interactive elements */
-    a, a:link, a:visited, a:hover, a:active,
-    button, input, textarea, select, label {
+    .custom-cursor-enabled,
+    .custom-cursor-enabled a, .custom-cursor-enabled a:link, .custom-cursor-enabled a:visited, .custom-cursor-enabled a:hover, .custom-cursor-enabled a:active,
+    .custom-cursor-enabled button, .custom-cursor-enabled input, .custom-cursor-enabled textarea, .custom-cursor-enabled select, .custom-cursor-enabled label {
         cursor: none !important;
     }
 }
 
 h1 {
-    font-size: 4rem;
+    font-size: clamp(2.5rem, 9vw, 8rem);
     letter-spacing: 5px;
 }
 
@@ -77,6 +76,13 @@ a {
 /* remove underline globally (including hover/focus) for a cleaner look */
 a, a:link, a:visited, a:hover, a:focus, a:active {
     text-decoration: none !important;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 4px;
 }
 
 @font-face {
@@ -110,11 +116,9 @@ a, a:link, a:visited, a:hover, a:focus, a:active {
 .name {
     font-family: "DeiGrat", monospace;
     display: inline-block;
-    /* exact one-seventh of the viewport width */
-    width: calc(100vw / 7);
+    max-width: calc(100vw - 2rem);
     box-sizing: border-box;
-    white-space: nowrap;   /* no line breaks allowed */
-    overflow: visible;
+    white-space: nowrap;
     text-align: center;
 
     /* make glow transitions faster and hint the browser to optimize */
@@ -130,19 +134,11 @@ a, a:link, a:visited, a:hover, a:focus, a:active {
 
     font-family: "DeiGrat", monospace;
     display: inline-block;
-    width: calc(100vw / 7);
+    max-width: calc(100vw - 2rem);
     box-sizing: border-box;
     white-space: nowrap;
     overflow: visible;
     text-align: center;
-}
-
-/* on small screens let JS / media queries decide if different behavior is needed */
-@media (max-width: 480px) {
-    .name {
-        /* keep it single-line but allow a more reasonable starting size */
-        font-size: 20px;
-    }
 }
 
 /* Subheading and paragraph utility classes using project fonts.
@@ -153,8 +149,7 @@ h2.subheading {
     font-weight: 600 !important;
     line-height: 1;
     margin: 12px 0;
-    /* script will override to a value <= name size; provide fallback */
-    font-size: 20px !important;
+    font-size: clamp(1.5rem, 6vw, 4rem) !important;
 }
 
 .pixelitalic,
@@ -162,7 +157,7 @@ p.pixelitalic {
     font-family: "Source Serif 4", serif !important;
     line-height: 1.2;
     margin: 8px 0;
-    font-size: 15px !important;
+    font-size: clamp(1rem, 4vw, 2.5rem) !important;
 }
 
 /* If links or other inline elements should use pixelitalic, allow applying class to them too */
