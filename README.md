@@ -21,24 +21,6 @@
 
 #### And add small UI changes, font customisaitons, redesign
 
-## New project: Projector
-
-Concept: AI-based project planner. Initial UI like ChatGPT - rounded text box centered on screen, small logo on top
-background color #f9f9f9, greytext in text box has variable text e.g. "I want to build a time machine...*
-
-#### Example prompt: 
-##### I want to build a space probe.
-
-After the user enters this prompt, a few components should show up.
-
-First, a budget variable should be preset based on context memory & scale of project.
-
-Changing the budget slider should alter the following components.
-
-Resource list - list of raw materials and raw material prices for the project. Each resource should be confined to a small rectangular text box with a small image representing it, a header in the middle, a price, then a brief info or description detailing a) use within project context and b) acquisition hurdles.
-
-Legislative hurdles - to launch a space probe, there are probably some conflicts with aerospace restrictions. There may also be components that are impossible, difficult or illegal to obtain given the user's location. The A.I. needs to be compliant to legal restrictions and designed to account for the legal ramificaitons of the project.
-
 ## estack — FiTS Viewer (Flexible Image Transport System)
 
 A browser-based, local-first FITS astronomy viewer/stacker/compositor, living in [`fits-viewer/`](fits-viewer/). No build step, no server required — plain HTML/CSS/JS, same stack as the rest of this site.
