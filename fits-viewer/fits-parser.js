@@ -34,6 +34,8 @@
         'HB': 'H-beta',
         'OIII': 'OIII',
         'O3': 'OIII',
+        'NII': 'NII',
+        'N2': 'NII',
         'SII': 'SII',
         'S2': 'SII',
         'RED': 'Red',
