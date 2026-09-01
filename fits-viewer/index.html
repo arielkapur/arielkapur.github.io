@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" class="no-js">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>estack — FiTS Viewer</title>
+
+    <script>document.documentElement.classList.replace('no-js', 'js');</script>
+
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="icon" href="../favicon.png" type="image/png">
+    <link rel="shortcut icon" href="../favicon.png" type="image/png">
+</head>
+<body class="fits-app-body">
+    <header class="fits-header">
+        <h1 class="fits-title"><a href="../index.html">ariel kapur</a> / estack <span class="fits-subtitle">FiTS Viewer</span></h1>
+        <p class="fits-tagline">Flexible Image Transport System viewer, stacker &amp; color compositor — runs locally in your browser.</p>
+        <nav class="fits-nav">
+            <a href="../index.html">&larr; back to site</a>
+        </nav>
+    </header>
+
+    <main class="fits-main">
+
+        <section class="fits-panel" id="load-panel" aria-labelledby="load-heading">
+            <h2 id="load-heading">1. Load FITS files</h2>
+            <p class="fits-hint">Files are read and parsed entirely on your device — nothing is uploaded.</p>
+            <label class="fits-file-label" for="fits-file-input">
+                Choose one or more .fits / .fit files
+            </label>
+            <input type="file" id="fits-file-input" accept=".fits,.fit,.fts" multiple />
+            <ul id="frame-list" class="fits-frame-list" aria-live="polite"></ul>
+        </section>
+
+        <section class="fits-panel" id="stack-panel" aria-labelledby="stack-heading">
+            <h2 id="stack-heading">2. Stack</h2>
+            <p class="fits-hint">Check frames above, then combine them into a single stacked frame.</p>
+            <div class="fits-row">
+                <label for="stack-mode">Mode</label>
+                <select id="stack-mode">
+                    <option value="average">Average</option>
+                    <option value="median">Median</option>
+                </select>
+                <button id="create-stack-btn" type="button">Create stack</button>
+            </div>
+            <ul id="stack-list" class="fits-frame-list" aria-live="polite"></ul>
+        </section>
+
+        <section class="fits-panel" id="hierarchy-panel" aria-labelledby="hierarchy-heading">
+            <h2 id="hierarchy-heading">3. Group &rarr; Layer &rarr; Sublayer</h2>
+            <p class="fits-hint">Organize frames and stacks into groups and layers. Toggle visibility and reorder freely.</p>
+            <div class="fits-row">
+                <button id="add-group-btn" type="button">+ Group</button>
+            </div>
+            <div id="hierarchy-tree" class="fits-hierarchy-tree"></div>
+        </section>
+
+        <section class="fits-panel" id="filter-panel" aria-labelledby="filter-heading">
+            <h2 id="filter-heading">4. Isolate by filter</h2>
+            <div id="filter-toggles" class="fits-row" role="group" aria-label="Filter isolation"></div>
+        </section>
+
+        <section class="fits-panel" id="composite-panel" aria-labelledby="composite-heading">
+            <h2 id="composite-heading">5. Composite preview</h2>
+            <canvas id="composite-canvas" width="640" height="480" aria-label="Composite preview"></canvas>
+            <p id="composite-status" class="fits-hint">Load and assign frames to see a preview.</p>
+        </section>
+
+        <section class="fits-panel" id="curves-panel" aria-labelledby="curves-heading">
+            <h2 id="curves-heading">6. RGB curves</h2>
+            <p class="fits-hint">Drag to add/move points. Double-click a point to remove it. Arrow keys nudge the selected point.</p>
+            <div class="fits-row" role="tablist" aria-label="Curve channel">
+                <button class="curve-tab active" data-channel="r" type="button">Red</button>
+                <button class="curve-tab" data-channel="g" type="button">Green</button>
+                <button class="curve-tab" data-channel="b" type="button">Blue</button>
+                <button id="curves-reset-btn" type="button">Reset channel</button>
+            </div>
+            <canvas id="curve-canvas" width="256" height="200" role="img" aria-label="Curve editor"></canvas>
+        </section>
+
+        <section class="fits-panel" id="ai-panel" aria-labelledby="ai-heading">
+            <h2 id="ai-heading">AI Companion <span class="fits-subtitle">(local, non-networked)</span></h2>
+            <p class="fits-hint">Workflow hints and quick tips, generated on-device. No API keys, no network calls — the “open dream” companion, MVP edition.</p>
+            <ul id="ai-tips" class="fits-tip-list" aria-live="polite"></ul>
+            <button id="ai-tip-btn" type="button">Get another tip</button>
+        </section>
+
+        <section class="fits-panel" id="limits-panel" aria-labelledby="limits-heading">
+            <h2 id="limits-heading">Limits &amp; roadmap</h2>
+            <p class="fits-hint">See the <a href="../README.md">README</a> for current performance limits, supported workflow, and the feature roadmap.</p>
+        </section>
+
+    </main>
+
+    <script src="fits-parser.js"></script>
+    <script src="curves.js"></script>
+    <script src="ai-companion.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

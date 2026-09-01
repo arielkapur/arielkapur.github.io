@@ -1,0 +1,211 @@
+/* fits-viewer/style.css — styles scoped to the estack FiTS Viewer app */
+
+.fits-app-body {
+    display: block;
+    text-align: left;
+    align-items: stretch;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+    cursor: auto;
+}
+
+.fits-app-body, .fits-app-body * {
+    cursor: auto !important;
+}
+
+.fits-header {
+    margin-bottom: 24px;
+}
+
+.fits-title {
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+    margin: 0 0 6px;
+}
+
+.fits-title a {
+    color: inherit;
+}
+
+.fits-subtitle {
+    font-weight: normal;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.fits-tagline {
+    margin: 0 0 8px;
+    opacity: 0.8;
+}
+
+.fits-nav a {
+    color: #333;
+}
+
+.fits-main {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.fits-panel {
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 8px;
+    padding: 16px 18px;
+    background: #fff;
+}
+
+.fits-panel h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+}
+
+.fits-hint {
+    font-size: 0.85rem;
+    opacity: 0.75;
+    margin: 0 0 10px;
+}
+
+.fits-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.fits-file-label {
+    display: inline-block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.fits-frame-list, .fits-tip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.fits-frame-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    font-size: 0.9rem;
+}
+
+.fits-frame-list li:last-child {
+    border-bottom: none;
+}
+
+.fits-frame-name {
+    font-weight: bold;
+    flex: 1 1 160px;
+    word-break: break-all;
+}
+
+.fits-frame-status {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.fits-frame-status.error {
+    color: #b3261e;
+}
+
+.fits-progress {
+    width: 100%;
+    height: 6px;
+    appearance: none;
+}
+
+.fits-hierarchy-tree ul {
+    list-style: none;
+    margin: 0 0 0 16px;
+    padding: 0;
+    border-left: 2px dashed rgba(0,0,0,0.15);
+}
+
+.fits-hierarchy-tree > ul {
+    margin-left: 0;
+    border-left: none;
+}
+
+.fits-hierarchy-tree li {
+    padding: 6px 0 6px 10px;
+}
+
+.fits-node-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+}
+
+.fits-node-row input[type="text"] {
+    font: inherit;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.fits-node-row button {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+}
+
+#composite-canvas {
+    max-width: 100%;
+    background: #000;
+    border-radius: 6px;
+    display: block;
+}
+
+#curve-canvas {
+    background: #f4f4f4;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    touch-action: none;
+}
+
+.curve-tab {
+    font-weight: normal;
+}
+
+.curve-tab.active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+button, select, input[type="text"], input[type="color"] {
+    font-family: inherit;
+}
+
+button:focus-visible, select:focus-visible, input:focus-visible, canvas:focus-visible, a:focus-visible {
+    outline: 3px solid #1a73e8;
+    outline-offset: 2px;
+}
+
+button {
+    background: #222;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer !important;
+}
+
+button:hover {
+    background: #444;
+}
+
+button:disabled {
+    background: #999;
+    cursor: not-allowed !important;
+}
