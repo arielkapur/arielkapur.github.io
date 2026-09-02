@@ -156,16 +156,16 @@ h2.subheading {
     font-size: 20px !important;
 }
 
-.p,
-p.p {
+.pixelitalic,
+p.pixelitalic {
     font-family: "cavalhatriz", monospace !important;
     line-height: 1.2;
     margin: 8px 0;
     font-size: 15px !important;
 }
 
-/* If links or other inline elements should use p, allow applying class to them too */
-.p-inline {
+/* If links or other inline elements should use pixelitalic, allow applying class to them too */
+.pixelitalic-inline {
     font-family: "cavalhatriz", monospace !important;
     font-style: italic !important;
 }
