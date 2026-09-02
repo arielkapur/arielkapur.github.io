@@ -24,7 +24,7 @@
         <h1 class="name">
             <a href="https://www.instagram.com/arielkapur/">ariel kapur</a>
         </h1>
-        <p class="pixelitalic">
+        <p class="p">
             i have a website. it is a work in progress. <br />
             i am a software engineer and designer. <br />
         </p>
@@ -42,7 +42,7 @@
         <section data-transition="text">
             <h2 class="subheading">about</h2>
 
-            <p class="pixelitalic">
+            <p class="p">
                 currently working on a predictive real-time Solar System map, </br> complete with educational content and fun facts about the local planetary bodies <br />
             </p>
 
@@ -74,7 +74,7 @@
                 const finalNamePx = Math.max(6, best);
                 el.style.fontSize = finalNamePx + 'px';
 
-                // Now adjust subheadings and pixelitalic paragraphs relative to name size
+                // Now adjust subheadings and p paragraphs relative to name size
                 const nameSize = finalNamePx;
                 // subheading: 6/7 of name size, paragraph: 5/7 of name size
                 const subSize = Math.max(10, Math.floor(nameSize * 6 / 7));
@@ -83,7 +83,7 @@
                 document.querySelectorAll('.subheading').forEach(h => {
                     h.style.fontSize = subSize + 'px';
                 });
-                document.querySelectorAll('.pixelitalic').forEach(p => {
+                document.querySelectorAll('.p').forEach(p => {
                     p.style.fontSize = paraSize + 'px';
                 });
             }
