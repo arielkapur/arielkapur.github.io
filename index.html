@@ -5,9 +5,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+    
     <title>universe</title>
-
+    
     <script>document.documentElement.classList.replace('no-js', 'js');</script>
 
     <link rel="stylesheet" href="style.css">
@@ -74,23 +74,16 @@
                 const finalNamePx = Math.max(6, best);
                 el.style.fontSize = finalNamePx + 'px';
 
-                // Responsive scaling of subheadings/paragraphs relative to name size
-                const vw = window.innerWidth;
-                let subRatio = 0.82;
-                let paraRatio = 0.70;
-                if (vw <= 1024) { subRatio = 0.80; paraRatio = 0.68; }
-                if (vw <= 640) { subRatio = 0.78; paraRatio = 0.66; }
-
-                const subSize = Math.max(12, Math.floor(finalNamePx * subRatio));
-                const paraSize = Math.max(11, Math.floor(finalNamePx * paraRatio));
+                // Now adjust subheadings and pixelitalic paragraphs relative to name size
+                const nameSize = finalNamePx;
+                // subheading: 6/7 of name size, paragraph: 5/7 of name size
+                const subSize = Math.max(10, Math.floor(nameSize * 6 / 7));
+                const paraSize = Math.max(10, Math.floor(nameSize * 5 / 7));
 
                 document.querySelectorAll('.subheading').forEach(h => {
                     h.style.fontSize = subSize + 'px';
                 });
                 document.querySelectorAll('.pixelitalic').forEach(p => {
-                    p.style.fontSize = paraSize + 'px';
-                });
-                document.querySelectorAll('.dos').forEach(p => {
                     p.style.fontSize = paraSize + 'px';
                 });
             }
