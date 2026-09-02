@@ -85,6 +85,14 @@ input:focus-visible {
     outline-offset: 4px;
 }
 
+/* Preserve visible button borders while keeping custom fonts/cursor behavior */
+button {
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+}
+
 @font-face {
     font-family: "DeiGrat";
     src: url("fonts/DeiGrat.ttf");
