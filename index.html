@@ -5,22 +5,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
-    <title>Ariel Kapur — Software Engineer and Designer</title>
-    <meta name="description" content="Ariel Kapur is a software engineer and designer building interactive digital experiences.">
-    <meta name="robots" content="index,follow">
-    <link rel="canonical" href="https://arielkapur.github.io/">
-    <meta property="og:title" content="Ariel Kapur — Software Engineer and Designer">
-    <meta property="og:description" content="Interactive work by Ariel Kapur, software engineer and designer.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://arielkapur.github.io/">
-    <meta name="twitter:card" content="summary">
-    
-    <script>document.documentElement.classList.replace('no-js', 'js');</script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;1,400&family=Work+Sans:wght@600&display=swap" rel="stylesheet">
+    <title>universe</title>
+
+    <script>document.documentElement.classList.replace('no-js', 'js');</script>
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="transitions.css">
@@ -34,7 +22,7 @@
     <!-- cursor element removed to avoid FOUC; cursor.js will create it dynamically -->
     <header data-transition="text">
         <h1 class="name">
-            <a href="https://www.instagram.com/arielkapur/" rel="me">ariel kapur</a>
+            <a href="https://www.instagram.com/arielkapur/">ariel kapur</a>
         </h1>
         <p class="pixelitalic">
             i have a website. it is a work in progress. <br />
@@ -47,7 +35,6 @@
             <h2 class="subheading">projects</h2>
 
             <a class="dos" href="map.html"><span class="reveal-highlight">the solar system</span></a>
-            <a class="dos" href="fits-viewer/index.html"><span class="reveal-highlight">estack — FiTS viewer</span></a>
 
         </section>
 
@@ -56,12 +43,67 @@
             <h2 class="subheading">about</h2>
 
             <p class="pixelitalic">
-                Currently working on a predictive, real-time Solar System map, complete with educational content and fun facts about local planetary bodies.
+                currently working on a predictive real-time Solar System map, </br> complete with educational content and fun facts about the local planetary bodies <br />
             </p>
 
         </section>
 
     </main>
+
+    <script>
+        (function fitNameToSeventh() {
+            const el = document.querySelector('.name');
+            if (!el) return;
+
+            function fit() {
+                const containerWidth = Math.floor(window.innerWidth / 7);
+                el.style.width = containerWidth + 'px';
+
+                // binary-search for the largest font-size (px) that fits without wrapping
+                let low = 6, high = 1000, best = 6;
+                while (low <= high) {
+                    const mid = Math.floor((low + high) / 2);
+                    el.style.fontSize = mid + 'px';
+                    if (el.scrollWidth <= el.clientWidth) {
+                        best = mid;
+                        low = mid + 1;
+                    } else {
+                        high = mid - 1;
+                    }
+                }
+                const finalNamePx = Math.max(6, best);
+                el.style.fontSize = finalNamePx + 'px';
+
+                // Responsive scaling of subheadings/paragraphs relative to name size
+                const vw = window.innerWidth;
+                let subRatio = 0.82;
+                let paraRatio = 0.70;
+                if (vw <= 1024) { subRatio = 0.80; paraRatio = 0.68; }
+                if (vw <= 640) { subRatio = 0.78; paraRatio = 0.66; }
+
+                const subSize = Math.max(12, Math.floor(finalNamePx * subRatio));
+                const paraSize = Math.max(11, Math.floor(finalNamePx * paraRatio));
+
+                document.querySelectorAll('.subheading').forEach(h => {
+                    h.style.fontSize = subSize + 'px';
+                });
+                document.querySelectorAll('.pixelitalic').forEach(p => {
+                    p.style.fontSize = paraSize + 'px';
+                });
+                document.querySelectorAll('.dos').forEach(p => {
+                    p.style.fontSize = paraSize + 'px';
+                });
+            }
+
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(fit);
+            } else {
+                window.addEventListener('load', fit);
+                setTimeout(fit, 0);
+            }
+            window.addEventListener('resize', fit);
+        })();
+    </script>
 
     <script src="cursor.js"></script>
     <script src="transitions.js"></script>
