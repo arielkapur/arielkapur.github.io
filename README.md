@@ -1,9 +1,9 @@
-# 2/09/26
-## Psychological refresh on projects current
-### Solar system map sort of ditched for now - not a super interesting idea outside of a basic physical web simulation. 
-As far as interactivity goes a game would be much more engaging.
+## can i be real
 
-### The Agent has destroyed my original web design because I did not properly review pull requests.
-#### Lesson learned.
-- Umap moved to separate repo.
-- What to hold on the site? Currently just the estack FiTS viewer, which needs a lot of work, and not necessarily all agentic. I'm thinking of switching from copilot to Claude Code. 
+i fw javascript and openGL heavy
+
+so rn my website is this game that im working on,,,
+
+challenge is to try and get a working game running in js on web while avoiding lag
+
+im having too much fun!!!
