@@ -1,240 +1,727 @@
-body {
-    background-color: #f9f9f9;
-    color: #111;
-    font-family: Georgia, serif;
 
+:root {
+    --background: #000;
+    --foreground: #fff;
+    --muted: #999;
+    --gold: #e8bc52;
+    --player: #00ff66;
+    --enemy: #ff2020;
+    --font: "Press Start 2P", monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font);
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+#game {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    image-rendering: pixelated;
+}
+
+/* ==========================================================
+   TOP-LEFT: BUNKER STATISTICS
+   ========================================================== */
+
+#character-info {
+    position: absolute;
+    top: 32px;
+    left: 32px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+#stats {
+    color: #ddd;
+    font-size: 9px;
+    line-height: 2;
+}
+
+/* ==========================================================
+   TOP-RIGHT: PLAYER HUD
+   ========================================================== */
+
+#player-hud {
+    position: absolute;
+    top: 30px;
+    right: 32px;
+    width: 300px;
+    max-width: calc(100vw - 64px);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hud-heading,
+.xp-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.hud-heading {
+    font-size: 9px;
+    margin-bottom: 10px;
+}
+
+.xp-heading {
+    color: #c7b27b;
+    font-size: 7px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+/* Green health bar with white reflection */
+
+.hp-bar {
+    width: 100%;
+    height: 20px;
+    background: #102217;
+    overflow: hidden;
+}
+
+.hp-fill {
+    position: relative;
+    width: 100%;
+    height: 100%;
+
+    background: linear-gradient(
+        to bottom,
+        #aaffc4 0%,
+        #36ff80 28%,
+        #00d94f 55%,
+        #008c34 100%
+    );
+
+    box-shadow: inset 0 -3px 5px rgba(0, 0, 0, .2);
+    transition: width .2s ease-out;
+}
+
+.hp-fill::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    height: 4px;
+
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, .85),
+        rgba(255, 255, 255, .05)
+    );
+}
+
+/* Slim gold XP bar */
+
+.xp-bar {
+    width: 100%;
+    height: 5px;
+    background: #302713;
+    overflow: hidden;
+}
+
+.xp-fill {
+    width: 0%;
+    height: 100%;
+
+    background: linear-gradient(
+        to right,
+        #a87720,
+        #e8bc52,
+        #fff0a8
+    );
+
+    transition: width .2s ease-out;
+}
+
+#attack-stat {
+    margin-top: 14px;
+    font-size: 8px;
+    color: #ccc;
+    text-align: right;
+}
+
+/* ==========================================================
+   FLOATING DAMAGE / INTERACTION POPUPS
+   ========================================================== */
+
+#popup-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.entity-popup {
+    position: absolute;
+    font-size: 10px;
+    white-space: nowrap;
+    color: #fff;
+
+    text-shadow: 0 2px 5px #000;
+    transform: translate(-50%, -50%);
+
+    animation: popup-float .85s ease-out forwards;
+}
+
+.entity-popup.defeated {
+    color: var(--gold);
+}
+
+@keyframes popup-float {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -30%) scale(.75);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -70%) scale(1.05);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -170%) scale(.9);
+    }
+}
+
+/* ==========================================================
+   STAIRS PROMPT
+   ========================================================== */
+
+#stairs-prompt {
+    position: absolute;
+    left: 50%;
+    bottom: 25%;
+    z-index: 20;
+
+    white-space: nowrap;
+    font-size: 11px;
     text-align: center;
+    pointer-events: none;
+
+    transform: translateX(-50%);
+    transform-origin: center;
+
+    animation: stairs-pulse 2s ease-in-out infinite;
+}
+
+#stairs-prompt span {
+    color: var(--gold);
+}
+
+#stairs-prompt.hidden {
+    display: none;
+}
+
+/*
+   Sine-like pulsing:
+   Both opacity and scale reach their extrema together.
+   CSS ease-in-out creates a smooth periodic oscillation.
+*/
+
+@keyframes stairs-pulse {
+    0%, 100% {
+        opacity: .55;
+        transform: translateX(-50%) scale(.95);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.07);
+    }
+}
+
+/* ==========================================================
+   EVENT LOG
+   ========================================================== */
+
+#chat-container {
+    position: absolute;
+    bottom: 28px;
+    left: 32px;
+    width: min(540px, calc(100vw - 64px));
+    z-index: 10;
+    pointer-events: none;
+}
+
+#chat-log {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.chat-entry {
+    color: #aaa;
+    font-size: 9px;
+    line-height: 1.8;
+    text-shadow: 0 2px 5px #000;
+    animation: chat-appear .2s ease-out;
+}
+
+.chat-entry.latest {
+    color: #fff;
+}
+
+.chat-entry.level-up {
+    color: var(--gold);
+}
+
+.chat-entry.kill {
+    color: #ff7777;
+}
+
+@keyframes chat-appear {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================
+   CONTROLS
+   ========================================================== */
+
+#controls {
+    position: absolute;
+    right: 32px;
+    bottom: 28px;
+    z-index: 10;
+
+    font-size: 7px;
+    line-height: 2.5;
+    color: #777;
+    text-align: right;
+    pointer-events: none;
+}
+
+@media (max-width: 700px) {
+    #character-info {
+        top: 18px;
+        left: 16px;
+    }
+
+    #player-hud {
+        top: 65px;
+        right: 16px;
+        width: min(300px, calc(100vw - 32px));
+    }
+
+    #chat-container {
+        left: 16px;
+        bottom: 20px;
+    }
+
+    #stairs-prompt {
+        font-size: 8px;
+    }
+
+    #controls {
+        display: none;
+    }
+}
+
+
+/* ==========================================================
+   OPUS v0.4 — CHARACTER SELECTION
+   ========================================================== */
+
+.hidden {
+    display: none !important;
+}
+
+.selection-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    background: #000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow-y: auto;
+    padding: 32px;
+}
+
+.selection-content {
+    width: min(900px, 100%);
+    text-align: center;
+}
+
+.selection-content h1 {
+    font-size: 38px;
+    letter-spacing: 10px;
+    font-weight: normal;
+    margin: 0 0 25px;
+}
+
+.selection-subtitle {
+    color: #aaa;
+    font-size: 10px;
+    margin-bottom: 40px;
+}
+
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.character-card {
+    min-height: 190px;
+    padding: 20px 12px;
+
+    background: #101010;
+    border: 1px solid #555;
+    color: white;
+
+    font-family: var(--font);
+    cursor: pointer;
 
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    transition: background .15s, border-color .15s;
 }
 
-/* Custom cursor: hidden by default until JS enables it */
-@media (pointer: fine) and (hover: hover) {
-    body { cursor: none; }
-
-    /* Position the container fixed to the viewport */
-    #cursor {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 16px;
-        height: 16px;
-        pointer-events: none; /* Prevents the element from blocking clicks */
-        transform: translate(-50%, -50%); /* Centers the image on the mouse tip */
-        z-index: 9999; /* Keeps cursor above everything else */
-        opacity: 0;
-        visibility: hidden;
-        transition: transform 120ms linear, opacity 120ms linear, visibility 120ms linear;
-        will-change: transform, opacity;
-    }
-
-    /* Ensure the image fills the container */
-    #cursor img {
-        width: 99%;
-        height: 101%;
-        display: block;
-        object-fit: contain;
-    }
-
-    /* When hovering reveal-highlight, make the cursor image stark white */
-    #cursor.cursor-white img {
-        filter: invert(1) brightness(2) saturate(0);
-    }
-
-    /* expanded state for interactive elements */
-    #cursor.cursor-active {
-        transform: translate(-50%, -50%) scale(1.35) rotate(90deg);
-    }
-
-    /* Prevent browser from showing its own pointer/hand over interactive elements */
-    a, a:link, a:visited, a:hover, a:active,
-    button, input, textarea, select, label {
-        cursor: none !important;
-    }
+.character-card:hover,
+.character-card:focus-visible {
+    background: #222;
+    border-color: white;
 }
 
-h1 {
-    font-size: 4rem;
-    letter-spacing: 5px;
+.character-card strong {
+    font-size: 12px;
 }
 
-
-section {
-    margin-top: 60px;
+.character-card > span:not(.character-portrait) {
+    font-size: 7px;
+    line-height: 1.8;
 }
 
-
-a {
-    display: block;
-    margin: 8px 0;
-    color: black;
-    text-decoration: none;
+.character-portrait {
+    font-size: 28px;
+    color: #00ff66;
+    margin-bottom: 8px;
 }
 
-
-/* remove underline globally (including hover/focus) for a cleaner look */
-a, a:link, a:visited, a:hover, a:focus, a:active {
-    text-decoration: none !important;
+.weapon-name {
+    color: #fff;
 }
 
-@font-face {
-    font-family: "DeiGrat";
-    src: url("fonts/DeiGrat.ttf");
-    font-display: swap;
+.character-status {
+    color: #00ff66;
 }
 
-@font-face {
-    font-family: "vipnagorgialla";
-    src: url("fonts/dos.ttf");
-    font-display: swap;
+.locked-characters {
+    display: contents;
 }
 
-@font-face {
-    font-family: "cavalhatriz";
-    src: url("fonts/cavalhatriz.ttf");
-    font-display: swap;
+.character-card.locked {
+    opacity: .38;
+    cursor: default;
+    border-color: #333;
 }
 
-@font-face {
-    font-family: "dos";
-    src: url("fonts/dos.ttf");
-    font-display: swap;
+.character-card.locked .character-portrait {
+    color: #777;
 }
 
-.sidebar {
-    font-size: 2rem;
+.selection-footer {
+    margin-top: 35px;
+    font-size: 8px;
+    color: #777;
 }
 
-.name {
-    font-family: "DeiGrat", monospace;
-    display: inline-block;
-    /* exact one-seventh of the viewport width */
-    width: calc(100vw / 7);
-    box-sizing: border-box;
-    white-space: nowrap;   /* no line breaks allowed */
-    overflow: visible;
-    text-align: center;
+/* ==========================================================
+   EQUIPPED WEAPON HUD
+   ========================================================== */
 
-    /* make glow transitions faster and hint the browser to optimize */
-    transition: text-shadow 160ms ease, transform 160ms ease;
-    will-change: text-shadow, transform;
-    transform: translateZ(0); /* promote to its own layer to reduce jank */
-}
-
-.name:hover {
-    /* simplified glow (fewer layers) to reduce repaints and improve performance */
-    text-shadow: 0 0 14px rgba(0,0,0,0.45), 0 0 6px rgba(255,255,255,0.85);
-    transform: translateZ(0) scale(1.01);
-
-    font-family: "DeiGrat", monospace;
-    display: inline-block;
-    width: calc(100vw / 7);
-    box-sizing: border-box;
-    white-space: nowrap;
-    overflow: visible;
-    text-align: center;
-}
-
-/* on small screens let JS / media queries decide if different behavior is needed */
-@media (max-width: 480px) {
-    .name {
-        /* keep it single-line but allow a more reasonable starting size */
-        font-size: 20px;
-    }
-}
-
-/* Subheading and paragraph utility classes using project fonts.
-   Sizes will be adjusted by JS so they never exceed .name's pixel size. */
-.subheading,
-h2.subheading {
-    font-family: "vipnagorgialla", serif !important;
-    line-height: 1;
-    margin: 12px 0;
-    /* script will override to a value <= name size; provide fallback */
-    font-size: 20px !important;
-}
-
-.pixelitalic,
-p.pixelitalic {
-    font-family: "cavalhatriz", monospace !important;
-    line-height: 1.2;
-    margin: 8px 0;
-    font-size: 15px !important;
-}
-
-/* If links or other inline elements should use pixelitalic, allow applying class to them too */
-.pixelitalic-inline {
-    font-family: "cavalhatriz", monospace !important;
-    font-style: italic !important;
-}
-
-.dos,
-p.dos {
-    font-family: "dos", monospace !important;
-    line-height: 1.2;
-    margin: 8px 0;
-    font-size: 15px !important;
-}
-
-/* If links or other inline elements should use p, allow applying class to them too */
-.dos-inline {
-    font-family: "dos", monospace !important;
-    font-style: italic !important;
-}
-
-/* Center the page content vertically on screen (browser only) */
-@media screen {
-    body {
-        min-height: 95vh; /* ensure body fills viewport height */
-        justify-content: center; /* vertical centering because body is display:flex */
-    }
-}
-
-/* Link reveal highlight: black sweep left->right and text fades to white */
-.reveal-highlight {
-    position: relative;
-    /* size to the text so the highlight starts at the text/padding only */
-    display: inline-block;
-    padding: 2px 8px; /* reduced vertical padding -> thinner highlight */
-    margin: 0; /* anchors provide vertical spacing */
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-    border-radius: 2px;
-    /* ensure the text stays above the pseudo-element */
-    z-index: 2;
-    transition: color 260ms ease;
-    color: inherit;
-}
-.reveal-highlight::before {
-    content: "";
+#weapon-hud {
     position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    background: #080808;
-    border-radius: 2px;
-    transform-origin: left center;
-    transform: scaleX(0);
-    transition: transform 300ms cubic-bezier(0.2,0.9,0.2,1);
-    z-index: -10; /* sits under the text */
-}
-.reveal-highlight:hover::before,
-.reveal-highlight:focus::before {
-    transform: scaleX(1);
-}
-.reveal-highlight:hover,
-.reveal-highlight:focus {
-    color: #f8f8f8;
+    right: 32px;
+    bottom: 28px;
+    z-index: 20;
+
+    text-align: right;
+    pointer-events: none;
 }
 
-/* Respect reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    .reveal-highlight::before,
-    .reveal-highlight {
-        transition: none !important;
-        transform: none !important;
+.weapon-label {
+    font-size: 7px;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+#weapon-name {
+    font-size: 16px;
+    color: white;
+    margin-bottom: 18px;
+}
+
+.ammo-display {
+    font-size: 23px;
+    color: white;
+    font-variant-numeric: tabular-nums;
+}
+
+.ammo-divider {
+    color: #666;
+    margin: 0 8px;
+}
+
+#ammo-reserve {
+    color: #e8bc52;
+}
+
+#weapon-status {
+    margin-top: 12px;
+    font-size: 7px;
+    color: #aaa;
+}
+
+/* Move existing control legend above weapon HUD. */
+#controls {
+    bottom: 175px;
+}
+
+/* ==========================================================
+   SMALL SCREENS
+   ========================================================== */
+
+@media (max-width: 700px) {
+    .selection-screen {
+        padding: 18px;
     }
+
+    .selection-content h1 {
+        font-size: 24px;
+    }
+
+    .selection-subtitle {
+        font-size: 8px;
+    }
+
+    .character-grid {
+        gap: 7px;
+    }
+
+    .character-card {
+        min-height: 140px;
+        padding: 12px 5px;
+    }
+
+    .character-card strong {
+        font-size: 8px;
+    }
+
+    .character-card > span:not(.character-portrait) {
+        font-size: 6px;
+    }
+
+    #weapon-hud {
+        right: 16px;
+        bottom: 20px;
+    }
+}
+
+
+/* ==========================================================
+   OPUS v0.5 — AIM RETICLE
+   ========================================================== */
+
+#game-container,
+#game-container button {
+    cursor: none;
+}
+
+#aim-reticle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 90;
+
+    width: 46px;
+    height: 46px;
+
+    color: #ff4040;
+
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center;
+
+    pointer-events: none;
+    opacity: 0;
+
+    transition:
+        transform 150ms ease,
+        color 150ms ease,
+        opacity 150ms ease;
+}
+
+#aim-reticle.active {
+    opacity: 1;
+}
+
+/* Default: expanded red reticle */
+.reticle-circle {
+    position: absolute;
+    inset: 8px;
+
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+}
+
+.reticle-dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    width: 4px;
+    height: 4px;
+
+    background: currentColor;
+    border-radius: 50%;
+
+    transform: translate(-50%, -50%);
+}
+
+.reticle-mark {
+    position: absolute;
+    background: currentColor;
+}
+
+.mark-top,
+.mark-bottom {
+    width: 2px;
+    height: 9px;
+    left: calc(50% - 1px);
+}
+
+.mark-top {
+    top: 0;
+}
+
+.mark-bottom {
+    bottom: 0;
+}
+
+.mark-left,
+.mark-right {
+    height: 2px;
+    width: 9px;
+    top: calc(50% - 1px);
+}
+
+.mark-left {
+    left: 0;
+}
+
+.mark-right {
+    right: 0;
+}
+
+/* White and compact when directly targeting */
+#aim-reticle.focused {
+    color: #fff;
+    transform: translate(-50%, -50%) scale(.68);
+}
+
+/* Reaper's blue targeting state */
+#aim-reticle.reaper-target {
+    color: #48aaff;
+    transform: translate(-50%, -50%) scale(.68);
+    filter: drop-shadow(0 0 5px rgba(72, 170, 255, .8));
+}
+
+/* Reaper's firing pulse */
+#aim-reticle.firing {
+    color: #fff;
+    transform: translate(-50%, -50%) scale(.92);
+    filter: drop-shadow(0 0 10px rgba(255,255,255,.9));
+    transition-duration: 65ms;
+}
+
+/* Keep the selection interface above the reticle. */
+.selection-screen {
+    z-index: 100;
+}
+
+
+/* OPUS v0.5 — Controls layout correction */
+
+#controls {
+    position: absolute;
+    right: 32px;
+    bottom: 165px;
+    z-index: 10;
+
+    text-align: right;
+    font-size: 7px;
+    line-height: 2.3;
+
+    color: #777;
+    pointer-events: none;
+}
+
+@media (max-width: 700px) {
+    #controls {
+        display: none;
+    }
+}
+
+
+/* ==========================================================
+   OPUS v0.6 — CHARACTER SELECT RETICLE FIX
+   ========================================================== */
+
+/* Reticle must render above the selection screen. */
+#aim-reticle {
+    position: fixed;
+    z-index: 200;
+    pointer-events: none;
+}
+
+/* Hide the system cursor throughout character selection. */
+#character-select,
+#character-select *,
+#game-container,
+#game-container * {
+    cursor: none !important;
+}
+
+/* Preserve character-card click interactions. */
+.character-card {
+    pointer-events: auto;
 }

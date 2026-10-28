@@ -1,9 +1,8 @@
-## can i be real
+# DEEPER — tiny roguelike
+A zero-dependency, keyboard-controlled browser dungeon crawler.
 
-i fw javascript and openGL heavy
+Open `index.html` in a browser, or deploy the repository through GitHub Pages.
 
-so rn my website is this game that im working on,,,
+Controls: WASD/arrows to move and attack, Space to wait, Enter on stairs to descend, R to restart.
 
-challenge is to try and get a working game running in js on web while avoiding lag
-
-im having too much fun!!!
+Built with HTML Canvas, CSS, and vanilla JavaScript.
