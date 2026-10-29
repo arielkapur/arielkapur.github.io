@@ -43,7 +43,7 @@ function initFisheye(){
         const fs=`precision mediump float;
             varying vec2 uv; uniform sampler2D tex; uniform float aspect;
             uniform vec4 crt; uniform vec2 resolution; uniform vec2 cameraOffset;
-            uniform float worldTime; uniform float tiltStrength; uniform vec4 rhythmVisuals;
+            uniform float worldTime; uniform float tiltStrength; uniform vec4 rhythmVisuals; uniform float comboCount;
             void main(){
                 vec2 p=uv*2.-1.;
                 vec2 q=vec2(p.x*aspect,p.y);
@@ -64,7 +64,8 @@ function initFisheye(){
                     // Camera offset uses the same world origin for manual,
                     // held-key and automatic movement.
                     vec2 grid=abs(fract(world/64.)-.5)*32.;
-                    float line=1.-smoothstep(.25,0.3,min(grid.x,grid.y));
+                    float edge = comboCount > 7.0 ? 0.26 : 0.3;
+                    float line=1.-smoothstep(.25,edge,min(grid.x,grid.y));
                     // Flowing, interference-driven RGB manifold
                     vec2 flow = world * 0.003;
 
@@ -146,6 +147,7 @@ float pulse = pow(
         gl._tiltLocation=gl.getUniformLocation(program,"tiltStrength");
         gl._rhythmVisualsLocation =
             gl.getUniformLocation(program, "rhythmVisuals");
+        gl._comboLocation=gl.getUniformLocation(program,"comboCount");
     }catch(err){
         console.warn("Fisheye disabled; normal canvas retained:",err);
         canvas.style.opacity="1";
@@ -181,6 +183,7 @@ function presentFisheye(){
         RHYTHM_VISUALS.pulseSharpness,
         RHYTHM_VISUALS.flowBoost
     );
+    gl.uniform1f(gl._comboLocation,combo);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 }
 
@@ -675,6 +678,21 @@ canvas.addEventListener("mousedown", event => {
 });
 
 function startSeraphimRun() {
+    if (!ostReady || ostStarting) return;
+    ostStarting = true;
+    // Call play() synchronously from the character-selection click.
+    armadaOST.currentTime = 0;
+    const playback = armadaOST.play();
+    Promise.resolve(playback).then(() => {
+        ostStarting = false;
+        beginSeraphimRun();
+    }).catch(error => {
+        ostStarting = false;
+        setOSTStatus("AUDIO BLOCKED — CLICK TO RETRY", true);
+        console.error("OPUS soundtrack playback failed:", error);
+    });
+}
+function beginSeraphimRun() {
     selectedCharacter = "Seraphim";
     equippedWeapon = createUSPS();
 
@@ -692,7 +710,7 @@ function startSeraphimRun() {
 
     // Initialize Seraphim's run.
     restartGame();
-    startCharacterMusic();
+    startCharacterMusic(true);
 
     updateWeaponHUD();
 
@@ -807,7 +825,74 @@ const OST_BPM = 75;
 const CREATURE_CYCLE_SECONDS = 1.6;
 const CREATURE_FRAME_SECONDS = CREATURE_CYCLE_SECONDS / 4;
 const HELD_TAB_INTERVAL_SECONDS = 0.8;
-const armadaOST = new Audio("resources/tiles_ld.ogg");
+const armadaOST = new Audio();
+const OST_SOURCES = ["resources/tiles_ld.ogg", "resources/tiles_ld.mp3"];
+let ostReady = false;
+let ostStarting = false;
+const ostStatus = document.createElement("div");
+ostStatus.id = "opus-ost-status";
+ostStatus.style.cssText = "margin:12px auto;text-align:center;font:11px monospace;letter-spacing:1px;color:#b8cbd5;max-width:340px;line-height:1.6";
+selectSeraphimButton.insertAdjacentElement("afterend",ostStatus);
+function setOSTStatus(message, error=false) {
+    ostStatus.textContent = message;
+    ostStatus.style.color = error ? "#ff8792" : "#b8cbd5";
+}
+async function preloadOST() {
+    ostReady = false;
+    selectSeraphimButton.disabled = true;
+    selectSeraphimButton.style.opacity = "0.5";
+    ostStatus.onclick = null;
+    ostStatus.style.cursor = "";
+    setOSTStatus("LOADING SOUNDTRACK…");
+    const failures = [];
+    for (const source of OST_SOURCES) {
+        try {
+            // GitHub Pages resolves this relative to index.html, including repo subpaths.
+            const url = new URL(source, document.baseURI).href;
+            const response = await fetch(url, {method:"GET", cache:"no-cache"});
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const type = response.headers.get("content-type") || "unknown";
+            // Avoid accepting GitHub Pages' HTML 404 page as an audio file.
+            if (type.includes("text/html")) throw new Error("Server returned HTML instead of audio");
+            // Use the actual URL instead of a blob URL for broad browser compatibility.
+            armadaOST.pause();
+            armadaOST.src = url;
+            armadaOST.load();
+            await new Promise((resolve, reject) => {
+                if (armadaOST.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return resolve();
+                const timer = setTimeout(() => finish(new Error("Audio loading timed out (20s)")), 20000);
+                function finish(error) {
+                    clearTimeout(timer);
+                    armadaOST.removeEventListener("loadeddata", onReady);
+                    armadaOST.removeEventListener("error", onError);
+                    error ? reject(error) : resolve();
+                }
+                function onReady() { finish(); }
+                function onError() {
+                    const code = armadaOST.error?.code;
+                    const meanings = {1:"aborted",2:"network error",3:"decode error",4:"unsupported audio format"};
+                    finish(new Error(`Media error ${code}: ${meanings[code] || "unknown"}`));
+                }
+                armadaOST.addEventListener("loadeddata", onReady);
+                armadaOST.addEventListener("error", onError);
+            });
+            ostReady = true;
+            selectSeraphimButton.disabled = false;
+            selectSeraphimButton.style.opacity = "";
+            setOSTStatus("SOUNDTRACK READY — SELECT SERAPHIM");
+            console.info("OPUS soundtrack loaded:", url);
+            return;
+        } catch (error) {
+            console.warn("OPUS soundtrack source failed:", source, error);
+            failures.push(`${source}: ${error.message}`);
+        }
+    }
+    const detail = failures.join(" | ");
+    setOSTStatus(`SOUNDTRACK FAILED — ${detail} — CLICK TO RETRY`, true);
+    ostStatus.style.cursor = "pointer";
+    ostStatus.onclick = preloadOST;
+}
+
 armadaOST.loop = true;
 armadaOST.preload = "auto";
 armadaOST.volume = 0.45;
@@ -820,11 +905,13 @@ let tabHeld = false;
 let tabNextTick = null;
 let creatureFrameRendered = -1;
 
-function startCharacterMusic() {
+function startCharacterMusic(alreadyPlaying=false) {
     tabHeld = false;
     tabNextTick = null;
-    armadaOST.pause();
-    armadaOST.currentTime = 0;
+    if (!alreadyPlaying) {
+        armadaOST.pause();
+        armadaOST.currentTime = 0;
+    }
     rhythmLoops = 0;
     rhythmLastAudioTime = 0;
     rhythmStartTime = performance.now() / 1000;
@@ -833,7 +920,7 @@ function startCharacterMusic() {
     resetCombo();
     if (selectedCharacter !== "Seraphim") return;
     // Selection click is a user gesture, so browser autoplay is permitted.
-    armadaOST.play().then(() => {
+    (alreadyPlaying ? Promise.resolve() : armadaOST.play()).then(() => {
         rhythmStartTime = performance.now() / 1000 - armadaOST.currentTime;
         rhythmClockRunning = true;
         rhythmLastAudioTime = armadaOST.currentTime;
@@ -3848,6 +3935,7 @@ window.addEventListener("blur", () => { tabHeld = false; tabNextTick = null; });
 
 // Wait for character selection before starting gameplay.
 buildCreatureSprites();
+preloadOST();
 initFisheye();
 resizeCanvas();
 requestAnimationFrame(animationLoop);
