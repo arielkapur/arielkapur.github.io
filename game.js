@@ -64,8 +64,14 @@ function initFisheye(){
                     // Camera offset uses the same world origin for manual,
                     // held-key and automatic movement.
                     vec2 grid=abs(fract(world/64.)-.5)*32.;
-                    float edge = comboCount > 7.0 ? 0.26 : 0.3;
-                    float line=1.-smoothstep(.25,edge,min(grid.x,grid.y));
+                    // Combo > 7 reverses the original 0.25 -> 0.30 edge ramp.
+                    // smoothstep(0.25, 0.20, x) is undefined in GLSL;
+                    // smoothstep(0.20, 0.25, x) is its defined equivalent
+                    // after accounting for the outer 1.0 - expression.
+                    float gridDistance = min(grid.x, grid.y);
+                    float line = comboCount > 7.0
+                        ? smoothstep(0.20, 0.25, gridDistance)
+                        : 1.0 - smoothstep(0.25, 0.30, gridDistance);
                     // Flowing, interference-driven RGB manifold
                     vec2 flow = world * 0.003;
 
@@ -184,6 +190,16 @@ function presentFisheye(){
         RHYTHM_VISUALS.flowBoost
     );
     gl.uniform1f(gl._comboLocation,combo);
+    // Diagnostic: log on first render and whenever combo crosses 8.
+    const manifoldHighCombo = combo > 7;
+    if (gl._lastManifoldHighCombo !== manifoldHighCombo) {
+        gl._lastManifoldHighCombo = manifoldHighCombo;
+        const gpuCombo = gl._comboLocation === null ? null :
+            gl.getUniform(gl.getParameter(gl.CURRENT_PROGRAM), gl._comboLocation);
+        console.info('[OPUS manifold] combo:', combo,
+            'GPU uniform:', gpuCombo,
+            'mode:', manifoldHighCombo ? 'REVERSED (0.20–0.25)' : 'NORMAL (0.25–0.30)');
+    }
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 }
 
@@ -252,7 +268,10 @@ let enemies = [];
 let stairs = null;
 let player = null;
 
-let bunker = 1;
+let bunker = 1; // stage number (kept for enemy scaling)
+let stageName = "Delphi";
+let iceMomentum = null;
+let lastCainaTick = -1, lastAntenoraTick = -1;
 let turn = 0;
 let gameOver = false;
 
@@ -305,9 +324,6 @@ if (lockedCharacters) lockedCharacters.style.display="none";
 
 const weaponHUD = document.querySelector("#weapon-hud");
 const weaponNameElement = document.querySelector("#weapon-name");
-const ammoCurrentElement = document.querySelector("#ammo-current");
-const ammoReserveElement = document.querySelector("#ammo-reserve");
-const weaponStatusElement = document.querySelector("#weapon-status");
 
 // Eight reserved slots. No characters are defined yet.
 for (let i = 0; i < 0; i++) {
@@ -324,73 +340,14 @@ for (let i = 0; i < 0; i++) {
 }
 
 
-// Reaper is the second playable character.
-const reaperCard = document.createElement("button");
-
-reaperCard.id = "select-reaper";
-reaperCard.className = "character-card";
-
-reaperCard.innerHTML = `
-    <span class="character-portrait">R</span>
-    <strong>REAPER</strong>
-    <span>STARTING WEAPON</span>
-    <span class="weapon-name">L137A1</span>
-    <span>PRECISION: 2X DAMAGE</span>
-    <span class="character-status">AVAILABLE</span>
-`;
-
-// Reaper hidden from selection.
-
-const rubikCard = document.createElement("button");
-
-rubikCard.id = "select-rubik";
-rubikCard.className = "character-card";
-
-rubikCard.innerHTML = `
-    <span class="character-portrait">R</span>
-    <strong>RUBIK</strong>
-    <span>STARTING WEAPON</span>
-    <span class="weapon-name">CZ P-09</span>
-    <span>9mm NATO</span>
-    <span class="character-status">AVAILABLE</span>
-`;
-
-// Rubik hidden from selection.
-
+// Additional character slots will be implemented independently later.
 let selectedCharacter = null;
 let gameStarted = false;
 
 // This represents the player's currently equipped weapon.
 // Weapon-specific behavior can be expanded later.
-function createUSPS() {
-    return {
-        name: "HK USP",
-        magazineSize: 15,
-        ammo: 15,
-        reserve: Infinity,
-        damage: 3
-    };
-}
-
-function createL137A1() {
-    return {
-        name: "L137A1",
-        magazineSize: 15,
-        ammo: 15,
-        reserve: Infinity,
-        damage: 3
-    };
-}
-
-function createCZP09() {
-    return {
-        name: "CZ P-09",
-        ammoType: "9mm NATO",
-        magazineSize: 19,
-        ammo: 19,
-        reserve: Infinity,
-        damage: 3
-    };
+function createSeraphimWeapon() {
+    return { name: "SERAPHIM", damage: 3 }; // Unlimited shots; no magazine.
 }
 
 let equippedWeapon = null;
@@ -489,7 +446,7 @@ let aimDirection = {
 // The enemy directly beneath the reticle.
 let hoveredEnemy = null;
 
-// Timer for the Reaper firing pulse.
+// Timer for the reticle firing pulse.
 let reticlePulseTimer = null;
 
 function getPlayerScreenPosition() {
@@ -623,11 +580,7 @@ function updateReticle() {
         isFocused
     );
 
-    aimReticle.classList.toggle(
-        "reaper-target",
-        selectedCharacter === "Reaper" &&
-        hoveredEnemy !== null
-    );
+
 }
 
 function pulseReticle() {
@@ -694,7 +647,7 @@ function startSeraphimRun() {
 }
 function beginSeraphimRun() {
     selectedCharacter = "Seraphim";
-    equippedWeapon = createUSPS();
+    equippedWeapon = createSeraphimWeapon();
 
     facing = { x: 0, y: -1 };
 
@@ -706,85 +659,19 @@ function beginSeraphimRun() {
 
     // Hide character selection and show the weapon HUD.
     characterSelect.classList.add("hidden");
-    weaponHUD.classList.remove("hidden");
+    if (weaponHUD) weaponHUD.classList.add("hidden");
 
     // Initialize Seraphim's run.
     restartGame();
     startCharacterMusic(true);
 
-    updateWeaponHUD();
 
     addChatMessage("SERAPHIM ENTERS THE BUNKER.");
 }
 
-function startReaperRun() {
-    selectedCharacter = "Reaper";
-    equippedWeapon = createL137A1();
-
-    facing = { x: 0, y: -1 };
-    aimDirection = { x: 0, y: -1 };
-
-    visualEffects = [];
-    playerMovement = null;
-
-    gameStarted = true;
-
-    characterSelect.classList.add("hidden");
-    weaponHUD.classList.remove("hidden");
-
-    restartGame();
-    startCharacterMusic();
-    updateWeaponHUD();
-
-    addChatMessage("REAPER ENTERS THE BUNKER.");
-}
-reaperCard.addEventListener("click", startReaperRun);
-
-function startRubikRun() {
-    selectedCharacter = "Rubik";
-    equippedWeapon = createCZP09();
-
-    facing = { x: 0, y: -1 };
-    aimDirection = { x: 0, y: -1 };
-
-    visualEffects = [];
-    playerMovement = null;
-
-    gameStarted = true;
-
-    characterSelect.classList.add("hidden");
-    weaponHUD.classList.remove("hidden");
-
-    restartGame();
-    startCharacterMusic();
-    updateWeaponHUD();
-
-    addChatMessage("RUBIK ENTERS THE BUNKER.");
-    addChatMessage("CZ P-09 EQUIPPED — 9mm NATO.");
-}
-rubikCard.addEventListener("click", startRubikRun);
-
+// Ammo and reload HUD are retired; Seraphim fires on every click.
+if (weaponHUD) weaponHUD.classList.add("hidden");
 selectSeraphimButton.addEventListener("click", startSeraphimRun);
-
-function updateWeaponHUD() {
-    if (!equippedWeapon) return;
-
-    weaponNameElement.textContent =
-    equippedWeapon.ammoType
-        ? `${equippedWeapon.name} · ${equippedWeapon.ammoType}`
-        : equippedWeapon.name;
-    ammoCurrentElement.textContent = equippedWeapon.ammo;
-
-    ammoReserveElement.textContent =
-        equippedWeapon.reserve === Infinity
-            ? "∞"
-            : equippedWeapon.reserve;
-
-    weaponStatusElement.textContent =
-        equippedWeapon.ammo === 0
-            ? "RELOADING..."
-            : "READY · AUTO-RELOAD";
-}
 
 // ============================================================
 // OPUS — LIGHTWEIGHT SOUND EFFECTS
@@ -1264,7 +1151,7 @@ class Enemy {
 class SecBotA extends Enemy {
     constructor(x, y, currentBunker) {
         super(x, y, {
-            name: "SecBot A",
+            name: "Gore",
             hp: 4 + currentBunker * 2,
             xpReward: 3,
             color: COLORS.marauder
@@ -1275,12 +1162,20 @@ class SecBotA extends Enemy {
 class GoblinArcher extends Enemy {
     constructor(x, y, currentBunker) {
         super(x, y, {
-            name: "Goblin Archer",
+            name: "Razor",
             hp: 3 + currentBunker,
             xpReward: 4,
             color: COLORS.archer
         });
     }
+}
+
+// Cocytus-specific enemies. All timings are in soundtrack seconds.
+class Caina extends Enemy {
+    constructor(x,y,stage) { super(x,y,{name:"Caina",hp:8+stage*2,xpReward:6,color:"#95172d"}); this.lastWhip=-Infinity; }
+}
+class Antenora extends Enemy {
+    constructor(x,y,stage) { super(x,y,{name:"Antenora",hp:11+stage*2,xpReward:8,color:"#758ba7"}); this.lastBlink=-Infinity; this.lastStab=-Infinity; }
 }
 
 // ============================================================
@@ -1301,75 +1196,47 @@ function generateDungeon() {
     rooms = [];
     enemies = [];
 
-    for (
-        let attempt = 0;
-        attempt < 200 && rooms.length < 16;
-        attempt++
-    ) {
-        const width = 5 + randomInt(6);
-        const height = 5 + randomInt(5);
-
-        const x = 1 + randomInt(MAP_WIDTH - width - 2);
-        const y = 1 + randomInt(MAP_HEIGHT - height - 2);
-
-        const room = {
-            x,
-            y,
-            width,
-            height,
-            centerX: x + Math.floor(width / 2),
-            centerY: y + Math.floor(height / 2)
-        };
-
-        const overlaps = rooms.some(existing => (
-            x <= existing.x + existing.width &&
-            x + width >= existing.x - 1 &&
-            y <= existing.y + existing.height &&
-            y + height >= existing.y - 1
-        ));
-
-        if (overlaps) {
-            continue;
-        }
-
-        for (let row = y; row < y + height; row++) {
-            for (let col = x; col < x + width; col++) {
-                map[row][col] = 1;
-            }
-        }
-
-        if (rooms.length > 0) {
-            const previous = rooms[rooms.length - 1];
-
-            carveCorridor(
-                previous.centerX,
-                previous.centerY,
-                room.centerX,
-                room.centerY
-            );
-        }
-
-        rooms.push(room);
+    // Delphi runs south -> north (-Y); Cocytus runs north -> south (+Y).
+    // The route nodes are generated in travel order, so entry/exit, rooms,
+    // portal, enemies and auto-explore all agree without coordinate hacks.
+    const bands = stageName === "Delphi"
+        ? [33,27,22,17,12,7,2]
+        : [2,7,12,17,22,27,33];
+    const nodes = bands.map((y,i)=>({x:i===0||i===bands.length-1?24:9+randomInt(30),y}));
+    function carveDisc(x,y,r=1) {
+        for(let oy=-r;oy<=r;oy++)for(let ox=-r;ox<=r;ox++)
+            if(inBounds(x+ox,y+oy) && x+ox>0 && x+ox<MAP_WIDTH-1 && y+oy>0 && y+oy<MAP_HEIGHT-1)
+                map[y+oy][x+ox]=1;
     }
-
-    if (rooms.length < 2) {
-        generateDungeon();
-        return;
+    function route(x1,y1,x2,y2,r=1) {
+        let x=x1,y=y1;carveDisc(x,y,r);
+        // Randomly choose horizontal-first vs vertical-first to create alternate paths.
+        const horizontalFirst=randomInt(2)===0;
+        const axis=(horizontal)=>{ while(horizontal?x!==x2:y!==y2){
+            if(horizontal)x+=Math.sign(x2-x);else y+=Math.sign(y2-y);
+            carveDisc(x,y,r);
+        }};
+        if(horizontalFirst){axis(true);axis(false);}else{axis(false);axis(true);}
     }
-
-    const start = rooms[0];
-
-    if (player === null) {
-        player = createPlayer(start.centerX, start.centerY);
-    } else {
-        player.x = start.centerX;
-        player.y = start.centerY;
-
-        player.hp = Math.min(
-            player.maxHp,
-            player.hp + 5
-        );
+    for(let i=0;i<nodes.length;i++){
+        const n=nodes[i];
+        // Waystation rooms provide combat space between narrow passages.
+        for(let y=n.y-2;y<=n.y+2;y++)for(let x=n.x-3;x<=n.x+3;x++)carveDisc(x,y,0);
+        rooms.push({x:n.x-3,y:n.y-2,width:7,height:5,centerX:n.x,centerY:n.y});
+        if(i)route(nodes[i-1].x,nodes[i-1].y,n.x,n.y,1);
+        if(i>1){
+            const sideX=Math.max(4,Math.min(MAP_WIDTH-5,n.x+(i%2?-8:8)));
+            route(nodes[i-1].x,nodes[i-1].y,sideX,n.y-2,0);
+            route(sideX,n.y-2,n.x,n.y,0);
+        }
     }
+    const start=rooms[0];
+    if(player===null) player=createPlayer(start.centerX,start.centerY);
+    else {
+        player.x=start.centerX;player.y=start.centerY;
+        player.hp=Math.min(player.maxHp,player.hp+5);
+    }
+    iceMomentum=null;
 
     visualEffects = [];
     playerMovement = null;
@@ -1390,7 +1257,7 @@ function generateDungeon() {
     rebuildConcreteCache();
     updateVisibility();
 
-    addChatMessage(`BUNKER ${bunker} — Explore the unknown.`);
+    addChatMessage(`${stageName.toUpperCase()} · STAGE ${bunker} — TRAVEL ${stageName === "Delphi" ? "NORTH" : "SOUTH"} TO THE PORTAL.`);
 
     render();
 }
@@ -1432,10 +1299,9 @@ function spawnEnemies() {
                 continue;
             }
 
-            // 5:1 expected Marauder-to-Archer spawn ratio.
-            const enemy = randomInt(6) === 0
-                ? new GoblinArcher(x, y, bunker)
-                : new SecBotA(x, y, bunker);
+            const enemy = stageName === "Cocytus"
+                ? (randomInt(2) ? new Caina(x,y,bunker) : new Antenora(x,y,bunker))
+                : (randomInt(6) === 0 ? new GoblinArcher(x,y,bunker) : new SecBotA(x,y,bunker));
 
             enemies.push(enemy);
         }
@@ -1829,6 +1695,11 @@ function movePlayer(dx, dy, automatic = false, fast = false) {
 
     if (!automatic) {
         stopAutoExplore(false);
+        // Frictionless ice: each key press adds a short sliding impulse.
+        // The remaining momentum advances independently at 100 ms intervals.
+        if(stageName === "Cocytus" && (dx||dy))
+            iceMomentum={dx,dy,remaining:3,next:performance.now()+100};
+        else iceMomentum=null;
     }
 
     // Seraphim faces the direction of the most recent movement.
@@ -1873,12 +1744,10 @@ function movePlayer(dx, dy, automatic = false, fast = false) {
 
         if (isOnStairs()) {
             addChatMessage(
-                "STAIRS FOUND — Press ENTER to descend."
+                "PORTAL OPEN — Press ENTER to warp."
             );
         }
     }
-
-    processEnemyTurn();
 
     turn++;
 
@@ -1994,10 +1863,7 @@ function traceShot(startX, startY, dx, dy, damage) {
     }
 
     if (nearestEnemy) {
-        const actualDamage =
-            damage.precisionTarget === nearestEnemy
-                ? damage.base * 2
-                : damage.base;
+        const actualDamage = damage.base;
 
         damageEnemy(nearestEnemy, actualDamage, { x: dx, y: dy });
         playSound("hit", 0.6);
@@ -2036,86 +1902,23 @@ function createBulletTracer(startX, startY, endX, endY) {
 // ============================================================
 
 function fireWeapon(targetEnemy = null) {
-    if (!gameStarted || gameOver) return;
-
-    // Safety fallback for an already-empty magazine.
-    if (equippedWeapon.ammo <= 0) {
-        if (!autoReloadWeapon()) {
-            return;
-        }
-    }
-
+    if (!gameStarted || gameOver || !player) return;
     stopAutoExplore(false);
-
-    equippedWeapon.ammo--;
     playSound("fire", 0.38);
-
-    const startX = player.x;
-    const startY = player.y;
-
-    let dx = aimDirection.x;
-    let dy = aimDirection.y;
-
-    // Snap the shot toward the selected enemy's center.
+    const startX = player.x, startY = player.y;
+    let dx = aimDirection.x, dy = aimDirection.y;
     if (targetEnemy) {
         dx = targetEnemy.x - player.x;
         dy = targetEnemy.y - player.y;
     }
-
-    const directionLength = Math.hypot(dx, dy);
-
-    if (directionLength > 0.0001) {
-        dx /= directionLength;
-        dy /= directionLength;
-    }
-
-    // Reaper's special ability:
-    // Direct reticle hover doubles damage against that target.
-    const reaperPrecision =
-        selectedCharacter === "Reaper" &&
-        targetEnemy !== null &&
-        hoveredEnemy === targetEnemy;
-
-    const damage = {
-        base: equippedWeapon.damage,
-        precisionTarget: reaperPrecision ? targetEnemy : null
-    };
-
-    const endpoint = traceShot(
-        startX,
-        startY,
-        dx,
-        dy,
-        damage
-    );
-
-    createBulletTracer(
-        startX,
-        startY,
-        endpoint.x,
-        endpoint.y
-    );
-
-    if (selectedCharacter === "Reaper") {
-        pulseReticle();
-
-        if (reaperPrecision) {
-            addChatMessage("REAPER — PRECISION SHOT!", "level-up");
-        }
-    }
-
-    // Enemy movement resolves after the player's shot.
-    processEnemyTurn();
-    turn++;
-
-    if (equippedWeapon.ammo === 0) {
-        autoReloadWeapon();
-    }
-
-    updateWeaponHUD();
+    const length = Math.hypot(dx, dy);
+    if (length > 0.0001) { dx /= length; dy /= length; }
+    const endpoint = traceShot(startX, startY, dx, dy, {base: equippedWeapon.damage});
+    createBulletTracer(startX, startY, endpoint.x, endpoint.y);
+    pulseReticle();
+    // No turn consumption, ammunition, reload delay, or fire-rate cooldown.
     render();
 }
-
 
 // ============================================================
 // CONTEXT-SENSITIVE AUTO ACTION
@@ -2146,9 +1949,11 @@ function damageEnemy(enemy, damage, direction = null) {
         x: enemy.x - player.x,
         y: enemy.y - player.y
     };
-    stampImpactDecal(enemy.x, enemy.y, impact, defeated);
+    // Mechanical Razors do not bleed; only organic Blobs stain the floor.
+    const isRazor = enemy instanceof GoblinArcher || enemy instanceof Antenora;
+    if (!isRazor) stampImpactDecal(enemy.x, enemy.y, impact, defeated);
     visualEffects.push({
-        type: "impact",
+        type: isRazor ? "razor-impact" : "impact",
         x: enemy.x, y: enemy.y,
         startTime: performance.now(), duration: 145
     });
@@ -2171,7 +1976,8 @@ function damageEnemy(enemy, damage, direction = null) {
         }
 
         player.corpses++;
-        stampCorpse(enemy.x, enemy.y);
+        if (isRazor) stampRazorCorpse(enemy.x, enemy.y, enemy.visualVariant);
+        else stampCorpse(enemy.x, enemy.y);
 
         addChatMessage(
             `${enemy.name} defeated!`,
@@ -2182,73 +1988,160 @@ function damageEnemy(enemy, damage, direction = null) {
     }
 }
 
-// Infinite reserve for the current prototype.
+// ============================================================
+// REAL-TIME ENEMY AI — independent of player input
+// ============================================================
+const ENEMY_TICK_SECONDS = 0.4;
+const RAZOR_TICK_SECONDS = 0.2;
+let lastEnemyTick = -1;
+let lastRazorTick = -1;
 
-function autoReloadWeapon() {
-    if (!gameStarted || gameOver || !equippedWeapon) {
-        return false;
+function moveEnemyTowardPlayer(enemy) {
+    if (!player || gameOver) return;
+    const distance = Math.abs(enemy.x-player.x)+Math.abs(enemy.y-player.y);
+    if (distance <= 1 || distance > 8) return;
+    const directions = [
+        [Math.sign(player.x-enemy.x),0],
+        [0,Math.sign(player.y-enemy.y)]
+    ];
+    if (randomInt(2)) directions.reverse();
+    for (const [dx,dy] of directions) {
+        const nx=enemy.x+dx, ny=enemy.y+dy;
+        if ((dx||dy) && isWalkable(nx,ny) && !getEnemyAt(nx,ny) &&
+            !(nx===player.x && ny===player.y)) {
+            enemy.x=nx; enemy.y=ny; break;
+        }
     }
-
-    if (equippedWeapon.ammo > 0) {
-        return false;
-    }
-
-    // No manual reload input is required.
-    equippedWeapon.ammo = equippedWeapon.magazineSize;
-
-    addChatMessage(
-        `${equippedWeapon.name} — AUTO-RELOADING (1 TURN).`
-    );
-
-    // Reloading consumes a full game turn.
-    processEnemyTurn();
-    turn++;
-
-    updateWeaponHUD();
-
-    return true;
 }
 
+// Razor-only shortest-path navigation. Other enemies are dynamic obstacles.
+// Search for an unoccupied tile adjacent to Seraphim; never enter her tile.
+// Bounded BFS on the 48x36 tile grid, computed only on the 200 ms AI tick.
+function moveRazorTowardPlayer(razor) {
+    if (!player || gameOver) return;
+    const distance = Math.abs(razor.x-player.x)+Math.abs(razor.y-player.y);
+    if (distance <= 1 || distance > 12) return;
 
-// ============================================================
-// 13. PASSIVE ENEMY AI
-// ============================================================
+    const start = tileKey(razor.x, razor.y);
+    const queue = [[razor.x, razor.y]];
+    const seen = new Set([start]);
+    const firstStep = new Map();
+    let head = 0;
+    // Shuffle cardinal tie-breaks deterministically per enemy position/tick,
+    // avoiding an unnatural uniform marching pattern.
+    const directions = DIRECTIONS.slice();
+    const offset = (razor.x * 7 + razor.y * 11 + lastRazorTick) & 3;
+    directions.push(...directions.splice(0, offset));
 
-// Goblins pursue the player within six tiles.
-// They do NOT attack or inflict damage.
-
-function processEnemyTurn() {
-    for (const enemy of enemies) {
-        const distance =
-            Math.abs(enemy.x - player.x) +
-            Math.abs(enemy.y - player.y);
-
-        if (distance <= 1 || distance > 6) {
-            continue;
+    while (head < queue.length) {
+        const [x, y] = queue[head++];
+        if (Math.abs(x-player.x)+Math.abs(y-player.y) === 1) {
+            const step = firstStep.get(tileKey(x,y));
+            if (step) { razor.x=step[0]; razor.y=step[1]; }
+            return;
         }
-
-        const directions = [
-            [Math.sign(player.x - enemy.x), 0],
-            [0, Math.sign(player.y - enemy.y)]
-        ];
-
-        if (randomInt(2) === 1) {
-            directions.reverse();
+        for (const [dx,dy] of directions) {
+            const nx=x+dx, ny=y+dy;
+            const key=tileKey(nx,ny);
+            if (seen.has(key) || !isWalkable(nx,ny) ||
+                (nx===player.x && ny===player.y) || getEnemyAt(nx,ny)) continue;
+            seen.add(key);
+            firstStep.set(key, firstStep.get(tileKey(x,y)) || [nx,ny]);
+            queue.push([nx,ny]);
         }
+    }
+}
 
-        for (const [dx, dy] of directions) {
-            const nextX = enemy.x + dx;
-            const nextY = enemy.y + dy;
+function processRealTimeEnemies(timestamp) {
+    if (!gameStarted || gameOver || !player) return;
+    if(stageName==="Cocytus")return; // Cocytus has its own AI schedules.
+    const clock=getRhythmSeconds(timestamp);
+    const slowTick=Math.floor(clock/ENEMY_TICK_SECONDS);
+    const fastTick=Math.floor(clock/RAZOR_TICK_SECONDS);
+    // Avoid catch-up bursts when Chrome is backgrounded.
+    if (slowTick!==lastEnemyTick) {
+        lastEnemyTick=slowTick;
+        for (const enemy of enemies) {
+            if (!(enemy instanceof GoblinArcher)) moveEnemyTowardPlayer(enemy);
+        }
+        turn++; // Render invalidation only; not a gameplay turn.
+    }
+    if (fastTick!==lastRazorTick) {
+        lastRazorTick=fastTick;
+        for (const enemy of enemies) {
+            if (!(enemy instanceof GoblinArcher)) continue;
+            moveRazorTowardPlayer(enemy);
+            const adjacent=Math.abs(enemy.x-player.x)+Math.abs(enemy.y-player.y)<=1;
+            if (adjacent) {
+                player.hp=Math.max(0,player.hp-2);
+                showEntityPopup(player.x,player.y,"-2", "damage");
+                if (player.hp<=0) {
+                    gameOver=true;
+                    stopAutoExplore(false);
+                    addChatMessage("SERAPHIM FALLS — RESTART TO TRY AGAIN.","kill");
+                    break;
+                }
+            }
+        }
+        turn++;
+    }
+}
 
-            if (
-                (dx !== 0 || dy !== 0) &&
-                isWalkable(nextX, nextY) &&
-                !getEnemyAt(nextX, nextY) &&
-                !(nextX === player.x && nextY === player.y)
-            ) {
-                enemy.x = nextX;
-                enemy.y = nextY;
-                break;
+function processIceMomentum(timestamp) {
+    if(stageName!=="Cocytus" || !iceMomentum || gameOver || !player) return;
+    if(timestamp<iceMomentum.next)return;
+    const {dx,dy}=iceMomentum;
+    const nx=player.x+dx,ny=player.y+dy;
+    if(!isWalkable(nx,ny)||getEnemyAt(nx,ny)){iceMomentum=null;return;}
+    iceMomentum.remaining--;
+    iceMomentum.next=timestamp+100;
+    movePlayer(dx,dy,true,false);
+    if(iceMomentum && iceMomentum.remaining<=0)iceMomentum=null;
+}
+function damageSeraphim(amount,label) {
+    if(gameOver)return;
+    player.hp=Math.max(0,player.hp-amount);
+    showEntityPopup(player.x,player.y,`-${amount}`, "damage");
+    if(player.hp<=0){gameOver=true;iceMomentum=null;stopAutoExplore(false);addChatMessage(`SERAPHIM FALLS TO ${label}.`,"kill");}
+}
+// Teleport onto a walkable, vacant tile behind the player's last facing.
+function blinkAntenora(enemy) {
+    const bx=player.x-facing.x,by=player.y-facing.y;
+    const spots=[[bx,by],[bx+facing.y,by-facing.x],[bx-facing.y,by+facing.x]];
+    for(const [x,y] of spots)if(isWalkable(x,y)&&!getEnemyAt(x,y)&&!(x===player.x&&y===player.y)){
+        enemy.x=x;enemy.y=y;
+        visualEffects.push({type:"blink",x,y,startTime:performance.now(),duration:260});return;
+    }
+}
+function processCocytusEnemies(timestamp) {
+    if(stageName!=="Cocytus"||!gameStarted||gameOver||!player)return;
+    const clock=getRhythmSeconds(timestamp);
+    const cTick=Math.floor(clock/.8),aTick=Math.floor(clock/.2);
+    if(cTick!==lastCainaTick){
+        lastCainaTick=cTick;
+        for(const enemy of enemies){
+            if(!(enemy instanceof Caina))continue;
+            const dist=Math.abs(enemy.x-player.x)+Math.abs(enemy.y-player.y);
+            if(dist<=3){
+                enemy.lastWhip=clock;
+                visualEffects.push({type:"blood-whip",x:enemy.x,y:enemy.y,tx:player.x,ty:player.y,startTime:performance.now(),duration:380});
+                damageSeraphim(4,"CAINA");
+            }else moveEnemyTowardPlayer(enemy);
+        }
+    }
+    if(aTick!==lastAntenoraTick){
+        lastAntenoraTick=aTick;
+        for(const enemy of enemies){
+            if(!(enemy instanceof Antenora))continue;
+            const dist=Math.abs(enemy.x-player.x)+Math.abs(enemy.y-player.y);
+            if(dist>10)continue;
+            if(clock-enemy.lastBlink>=3.2 && dist>1){
+                enemy.lastBlink=clock;blinkAntenora(enemy);
+            }else if(dist>1 && aTick%2===0)moveEnemyTowardPlayer(enemy);
+            if(Math.abs(enemy.x-player.x)+Math.abs(enemy.y-player.y)<=1 && clock-enemy.lastStab>=1.2){
+                enemy.lastStab=clock;
+                visualEffects.push({type:"stab",x:enemy.x,y:enemy.y,tx:player.x,ty:player.y,startTime:performance.now(),duration:210});
+                damageSeraphim(3,"ANTENORA");
             }
         }
     }
@@ -2400,7 +2293,7 @@ function autoExploreStep() {
     // Once on the stairs, wait for the player to descend.
     if (isOnStairs()) {
         stopAutoExplore(false);
-        addChatMessage("BUNKER EXPLORED — STAIRS REACHED.");
+        addChatMessage("PORTAL REACHED — PRESS ENTER TO WARP.");
         return;
     }
 
@@ -2815,6 +2708,22 @@ function rebuildConcreteCache() {
     const img = mt.createImageData(sw, sh);
     for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
         const wx = x * scale, wy = y * scale;
+        if(stageName==="Cocytus") {
+            // Pixelated Minecraft-like ice: blue blocks, fine cracks and frost pixels.
+            const tileX=Math.floor(wx/32),tileY=Math.floor(wy/32);
+            const grain=Math.sin(tileX*17.17+tileY*41.71)*43758.5453;
+            const seed=grain-Math.floor(grain);
+            const fx=wx%32,fy=wy%32;
+            const seam=(fx<1||fy<1);
+            const crack=Math.abs(fy-10-5*Math.sin(wx*.13+seed*7))<1.2;
+            const fleck=((Math.floor(wx/4)*13+Math.floor(wy/4)*17+tileX*7)%31===0);
+            const i=(y*sw+x)*4;
+            img.data[i]=seam?73:crack?116:fleck?220:Math.round(131+seed*17);
+            img.data[i+1]=seam?132:crack?173:fleck?246:Math.round(195+seed*15);
+            img.data[i+2]=seam?166:crack?206:fleck?255:Math.round(224+seed*13);
+            img.data[i+3]=255;
+            continue;
+        }
         // Multi-scale, domain-warped ivory marble with rare gold and
         // charcoal hairline veins. All coordinates are world-space.
         const warpX=24*Math.sin(wx*.006+Math.sin(wy*.009)*2.1)
@@ -2843,7 +2752,7 @@ function rebuildConcreteCache() {
         img.data[i + 3] = 255;
     }
     mt.putImageData(img, 0, 0);
-    mg.imageSmoothingEnabled = true;
+    mg.imageSmoothingEnabled = stageName!=="Cocytus";
     // Build an explicit floor-only clip, avoiding destination-in compositing.
     const floorClip = new Path2D();
     for (let y = 0; y < MAP_HEIGHT; y++) for (let x = 0; x < MAP_WIDTH; x++) {
@@ -3286,7 +3195,7 @@ function drawFloatingMarbleEdges(){
 
 function drawDungeon() {
     drawAmbientConcrete();
-    drawFloatingMarbleEdges();
+    if(stageName==="Delphi")drawFloatingMarbleEdges();
     if (!player || lightPolygon.length < 3) return;
 
     // Marble is drawn directly into the main canvas. This avoids the
@@ -3303,7 +3212,7 @@ function drawDungeon() {
         }
     }
     ctx.clip(floorPath);
-    // Previously explored marble is dimmed, but remains recognisably ivory.
+    // Previously explored floor remains recognisable in both stages.
     ctx.save();
     ctx.clip(visibilityHistory);
     ctx.globalAlpha = 0.55;
@@ -3419,7 +3328,7 @@ function drawImpactDecals() {
 }
 
 // ============================================================
-// 18. STAIRS RENDERING
+// 18. PORTAL RENDERING (legacy stairs variable is the portal coordinate)
 // ============================================================
 
 function drawStairs() {
@@ -3439,7 +3348,7 @@ function drawStairs() {
     glow.addColorStop(1,'rgba(255,193,90,0)');
     ctx.fillStyle=glow;
     ctx.beginPath();ctx.arc(x,y,35,0,Math.PI*2);ctx.fill();
-    // Tall almond portal silhouette, brilliant white core and gold rim.
+    // Tall almond warp portal, brilliant white core and gold rim.
     ctx.save();
     ctx.shadowColor='#f5d38d';ctx.shadowBlur=12+5*breathe;
     ctx.beginPath();
@@ -3466,17 +3375,207 @@ function updateStairsPrompt() {
 // 19. ENEMY RENDERING
 // ============================================================
 
+// A reusable gothic, pitch-black four-scythe motif. Shared by living Razors
+// and the permanently stamped, non-animated corpse (no duplicated geometry).
+function traceGothicRazor(g) {
+    g.beginPath();
+    for (let blade=0; blade<4; blade++) {
+        const a=blade*Math.PI/2, c=Math.cos(a), s=Math.sin(a);
+        const point=(x,y)=>[x*c-y*s,x*s+y*c];
+        const move=(x,y)=>{const p=point(x,y);g.moveTo(p[0],p[1]);};
+        const line=(x,y)=>{const p=point(x,y);g.lineTo(p[0],p[1]);};
+        const curve=(x1,y1,x2,y2,x3,y3)=>{
+            const p=point(x1,y1),q=point(x2,y2),r=point(x3,y3);
+            g.bezierCurveTo(p[0],p[1],q[0],q[1],r[0],r[1]);
+        };
+        // Serrated sickle tip and recurved inner edge, not a simple shuriken.
+        move(-3,-2);
+        curve(-8,-6,-10,-13,-5,-18);
+        line(-2,-14); line(0,-20); line(2,-15);
+        curve(9,-11,9,-6,3,-3);
+        line(1,-6); line(-1,-4); line(-3,-2);
+        g.closePath();
+    }
+}
+
+function paintGothicRazor(g, edgeColor="#33333a") {
+    traceGothicRazor(g);
+    g.fillStyle="#020203";
+    g.strokeStyle=edgeColor;
+    g.lineWidth=0.9;
+    g.fill();g.stroke();
+    // Dark central iron hub; no bright magical glow.
+    g.beginPath();g.arc(0,0,3.1,0,Math.PI*2);
+    g.fillStyle="#050506";g.fill();
+    g.strokeStyle="#424148";g.lineWidth=0.75;g.stroke();
+    g.beginPath();g.arc(0,0,1.1,0,Math.PI*2);
+    g.fillStyle="#1b1b20";g.fill();
+}
+
+function drawRazor(enemy, screen, clock) {
+    const x=screen.x+TILE_SIZE/2, y=screen.y+TILE_SIZE/2;
+    const frame=Math.floor(clock/0.2);
+    ctx.save();ctx.translate(x,y);
+    // Dark silhouette first, then smaller +Z/-Z projections.
+    for (const z of [-1,0,1]) {
+        ctx.save();
+        ctx.translate(0,-z*4.5);
+        ctx.rotate(frame*(z===0?0.36:z<0?-0.24:0.27)+enemy.visualVariant);
+        ctx.scale(z===0?0.82:0.53,z===0?0.82:0.53);
+        paintGothicRazor(ctx,z===0?"#37363d":"#222127");
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+// Bake a Razor's remains once into the existing world-space decal canvas.
+// Four separated blade fragments, no Z projection, animation or blood.
+function stampRazorCorpse(tileX,tileY,variant=0) {
+    const x=(tileX+0.5)*TILE_SIZE, y=(tileY+0.5)*TILE_SIZE;
+    impactCtx.save();
+    impactCtx.translate(x,y);
+    const angle=(variant||0)*0.41;
+    // Broken, displaced fragments of the same gothic blade geometry.
+    for(let i=0;i<4;i++) {
+        impactCtx.save();
+        const a=i*Math.PI/2+angle;
+        impactCtx.translate(Math.cos(a)*3.6,Math.sin(a)*3.6);
+        impactCtx.rotate(a+(i%2?0.19:-0.24));
+        impactCtx.scale(i%2?0.46:0.52,0.52);
+        // Isolated blade silhouette from the living Razor's shape.
+        impactCtx.beginPath();
+        impactCtx.moveTo(-3,-2);
+        impactCtx.bezierCurveTo(-8,-6,-10,-13,-5,-18);
+        impactCtx.lineTo(-2,-14);
+        impactCtx.lineTo(0,-20);
+        impactCtx.lineTo(2,-15);
+        impactCtx.bezierCurveTo(9,-11,9,-6,3,-3);
+        impactCtx.lineTo(1,-6);
+        impactCtx.lineTo(-1,-4);
+        impactCtx.closePath();
+        impactCtx.fillStyle="#020203";
+        impactCtx.strokeStyle="#39383e";
+        impactCtx.lineWidth=1.2;
+        impactCtx.fill();impactCtx.stroke();
+        impactCtx.restore();
+    }
+    impactCtx.beginPath();impactCtx.arc(1,0,2.3,0,Math.PI*2);
+    impactCtx.fillStyle="#08080a";impactCtx.fill();
+    impactCtx.restore();
+}
+
+// Caina: projected 2.5D anatomy. The z-slices are individually rasterised
+// onto a transparent offscreen layer, then composed into the source scene
+// BEFORE the WebGL fisheye/CRT pass. This is real independent image layering,
+// not a WebGL depth buffer: z is projected into scale and vertical displacement.
+const CAINA_DEPTH = { pixelsPerZ: 6.5, scalePerZ: 0.085 };
+const cainaDepthCanvas = document.createElement("canvas");
+const cainaDepthCtx = cainaDepthCanvas.getContext("2d");
+function paintCainaHound(g, z, t, variant) {
+    const motion = Math.sin(t * 4 + variant * 0.8 + z * 0.24);
+    g.lineJoin = "round";
+    g.lineCap = "round";
+    // Four hunched legs, with alternating gait; upper slices are smaller.
+    g.strokeStyle = "#22040b";
+    g.lineWidth = 4.8;
+    for (let i = 0; i < 4; i++) {
+        const lx = (i % 2 ? 8 : -8) + (i < 2 ? -2 : 2);
+        const swing = motion * (i % 2 ? -2 : 2);
+        g.beginPath();
+        g.moveTo(lx, 4);g.lineTo(lx + swing, 12);
+        g.lineTo(lx + swing * 1.3 + (i % 2 ? 2 : -2), 15);
+        g.stroke();
+    }
+    // Raised spine, angular shoulders, narrow waist and wolf-like chest.
+    g.fillStyle = z > 1 ? "#27050d" : "#390710";
+    g.strokeStyle = "#7c1227";
+    g.lineWidth = 1.1;
+    g.beginPath();
+    g.moveTo(-13, 4);g.lineTo(-11, -5);g.lineTo(-6, -11);
+    g.lineTo(3, -9);g.lineTo(9, -5);g.lineTo(12, 5);
+    g.lineTo(5, 10);g.lineTo(-7, 10);g.closePath();
+    g.fill();g.stroke();
+    // Elongated canine muzzle and pointed ears.
+    g.beginPath();
+    g.moveTo(-7,-8);g.lineTo(-9,-18);g.lineTo(-3,-13);
+    g.lineTo(3,-13);g.lineTo(9,-18);g.lineTo(7,-7);
+    g.lineTo(5,-4);g.lineTo(4,0);g.lineTo(0,5);
+    g.lineTo(-4,0);g.lineTo(-5,-4);g.closePath();
+    g.fillStyle="#4c0816";g.fill();g.stroke();
+    g.fillStyle="#d52c45";
+    g.fillRect(-5,-8,3,2);g.fillRect(2,-8,3,2);
+    g.fillStyle="#140207";g.fillRect(-1,-1,3,2);
+    // Tendrils trail down from the shoulders and jaws.
+    g.strokeStyle="#9b102b";g.lineWidth=1.6;
+    for(let i=0;i<3;i++) {
+        const bx=-9+i*9;
+        g.beginPath();g.moveTo(bx,5);
+        g.quadraticCurveTo(bx+motion*4,12,bx+motion*6,17+i*2);
+        g.stroke();
+    }
+}
+function drawCaina(enemy,screen,clock){
+    const x=screen.x+TILE_SIZE/2, y=screen.y+TILE_SIZE/2;
+    // Offscreen transparent sprite planes are depth-composited into the main
+    // canvas, so the fisheye shader sees their combined projected volume.
+    const extent=112;
+    if(cainaDepthCanvas.width!==extent){cainaDepthCanvas.width=extent;cainaDepthCanvas.height=extent;}
+    const g=cainaDepthCtx;
+    g.clearRect(0,0,extent,extent);
+    g.save();g.translate(extent/2,extent/2);
+    g.fillStyle="rgba(9,0,5,0.42)";
+    g.beginPath();g.ellipse(0,13,15,5,0,0,Math.PI*2);g.fill();
+    // Back-to-front layering: -1, ground, +1, +2, +3.
+    for(const z of [-1,0,1,2,3]) {
+        g.save();
+        const scale=1+z*CAINA_DEPTH.scalePerZ;
+        g.translate(z*1.0,-z*CAINA_DEPTH.pixelsPerZ);
+        g.scale(scale,scale);
+        g.globalAlpha=z===-1?0.42:z===0?1:Math.max(.50,.89-(z-1)*.13);
+        paintCainaHound(g,z,clock,enemy.visualVariant||0);
+        g.restore();
+    }
+    // Vertical connective strands visibly join the projected planes.
+    g.strokeStyle="rgba(116,10,32,.58)";g.lineWidth=1.2;
+    for(const dx of [-7,7]){
+        g.beginPath();g.moveTo(dx,5+CAINA_DEPTH.pixelsPerZ);
+        g.lineTo(dx+3,-3*CAINA_DEPTH.pixelsPerZ+5);g.stroke();
+    }
+    g.fillStyle="#a71935";
+    for(let i=0;i<4;i++){
+        const dropY=((clock*19+i*11)%33)-13;
+        g.fillRect(-10+i*7,dropY,1.5,3.5);
+    }
+    g.restore();
+    ctx.drawImage(cainaDepthCanvas,x-extent/2,y-extent/2,extent,extent);
+}
+function drawAntenora(enemy,screen,clock){
+    const x=screen.x+TILE_SIZE/2,y=screen.y+TILE_SIZE/2;
+    ctx.save();ctx.translate(x,y);
+    ctx.fillStyle="#242b38";ctx.strokeStyle="#a9b9ce";ctx.lineWidth=1.5;
+    ctx.fillRect(-8,-17,16,31);ctx.strokeRect(-8,-17,16,31);
+    ctx.fillStyle="#56677f";ctx.fillRect(-10,-19,20,5);ctx.fillRect(-11,12,22,4);
+    const phase=Math.sin(clock*5+enemy.visualVariant);
+    ctx.strokeStyle="#e5f1ff";ctx.lineWidth=2.2;
+    ctx.beginPath();ctx.moveTo(9,-8);ctx.lineTo(19+phase*3,-16);ctx.lineTo(13+phase*3,12);ctx.stroke();
+    ctx.fillStyle="#e2efff";ctx.fillRect(-3,-8,6,2);
+    ctx.restore();
+}
+
 function drawEnemies() {
-    const frame = Math.floor(getRhythmSeconds() / CREATURE_FRAME_SECONDS) % 4;
+    const clock=getRhythmSeconds();
+    const frame=Math.floor(clock/CREATURE_FRAME_SECONDS)%4;
     for (const enemy of enemies) {
         if (!canSeeEnemy(enemy)) continue;
-        const screen = worldToScreen(enemy.x, enemy.y);
-        const type = enemy instanceof GoblinArcher ? "GoblinArcher" : "SecBotA";
-        const variant = enemy.visualVariant ?? 0;
-        const frames = creatureSprites.get(type + ":" + variant);
-        if (frames) {
-            ctx.drawImage(frames[frame], screen.x - 8, screen.y - 8);
+        const screen=worldToScreen(enemy.x,enemy.y);
+        if(enemy instanceof Caina){drawCaina(enemy,screen,clock);continue;}
+        if(enemy instanceof Antenora){drawAntenora(enemy,screen,clock);continue;}
+        if (enemy instanceof GoblinArcher) {
+            drawRazor(enemy,screen,clock);
+            continue;
         }
+        const frames=creatureSprites.get("SecBotA:"+(enemy.visualVariant??0));
+        if (frames) ctx.drawImage(frames[frame],screen.x-8,screen.y-8);
     }
 }
 
@@ -3492,8 +3591,30 @@ function drawVisualEffects(timestamp) {
     for (const effect of visualEffects) {
         const progress = Math.min(1,
             (timestamp - effect.startTime) / effect.duration);
-        if (effect.type === "bullet") {
+        if(effect.type==="blood-whip" || effect.type==="stab"){
+            const a=worldToScreen(effect.x,effect.y),b=worldToScreen(effect.tx,effect.ty);
+            ctx.save();ctx.globalAlpha=1-progress;
+            ctx.strokeStyle=effect.type==="stab"?"#d7e7fa":"#a30d2b";
+            ctx.lineWidth=effect.type==="stab"?2:4;
+            ctx.beginPath();ctx.moveTo(a.x+16,a.y+16-(effect.type==="blood-whip"?10:0));
+            ctx.quadraticCurveTo((a.x+b.x)/2+16,(a.y+b.y)/2-15,b.x+16,b.y+16);
+            ctx.stroke();ctx.restore();
+        }else if(effect.type==="blink"){
+            const a=worldToScreen(effect.x,effect.y);ctx.save();ctx.globalAlpha=1-progress;
+            ctx.strokeStyle="#c8e7ff";ctx.strokeRect(a.x+4-progress*6,a.y+4-progress*6,24+progress*12,24+progress*12);ctx.restore();
+        }else if (effect.type === "bullet") {
             drawBulletTracer(effect, progress);
+        } else if (effect.type === "razor-impact") {
+            // Small cold metallic glint; no blood-coloured hit ring.
+            const point=worldToScreen(effect.x,effect.y);
+            const x=point.x+TILE_SIZE/2,y=point.y+TILE_SIZE/2;
+            ctx.save();
+            ctx.globalAlpha=(1-progress)*0.65;
+            ctx.strokeStyle="#7c8490";ctx.lineWidth=1;
+            ctx.beginPath();
+            ctx.moveTo(x-4-progress*4,y);ctx.lineTo(x+4+progress*4,y);
+            ctx.moveTo(x,y-4-progress*4);ctx.lineTo(x,y+4+progress*4);
+            ctx.stroke();ctx.restore();
         } else if (effect.type === "impact") {
             const point = worldToScreen(effect.x, effect.y);
             const x = point.x + TILE_SIZE / 2;
@@ -3610,22 +3731,68 @@ function buildSeraphSprite(){
 }
 buildSeraphSprite();
 
+// OPUS experimental pseudo-Z stack. These are 2D projected squares,
+// composited into the source canvas BEFORE the fisheye/CRT WebGL pass.
+// No extra canvas, depth buffer, 3D model, or post-process is required.
+const PLAYER_Z_STACK = {
+    // Number of slices on EACH side of z=0 is player.level (XP-driven).
+    groundSize: 24,        // Central square in source-canvas pixels
+    sizeFalloff: 0.77,     // Successive slices shrink away from z=0
+    yPixelsPerLevel: 10,   // +z goes up-screen, -z goes down-screen
+    perspectivePerLevel: 0.045, // mild depth-dependent vertical spacing
+    animationSeconds: 0.2,
+    strokeWidth: 1.4,
+    glowBlur: 5,
+    rotationStep: Math.PI / 24 // radians per 200 ms; each slice has its own rate
+};
+
 function drawPlayer() {
-    const x=window.innerWidth/2, y=window.innerHeight/2;
-    const beat=Math.floor(getRhythmSeconds()/.4);
+    const x = window.innerWidth / 2;
+    const y = window.innerHeight / 2;
+    const t = getRhythmSeconds();
+    const frame = Math.floor(t / PLAYER_Z_STACK.animationSeconds);
+    const cfg = PLAYER_Z_STACK;
+    const levels = Math.max(0, Math.floor(player?.level ?? 0));
     ctx.save();
-    ctx.translate(Math.round(x),Math.round(y-(beat%2)));
-    ctx.imageSmoothingEnabled=false;
-    // Temporary solid gold cube; a neutral silhouette for the next character pass.
-    ctx.fillStyle="#493214";
-    ctx.fillRect(-14,-11,28,28);
-    ctx.fillStyle="#f5d68d";
-    ctx.fillRect(-13,-14,26,25);
-    ctx.fillStyle="#b68b42";
-    ctx.fillRect(9,-11,4,25);
-    ctx.fillRect(-13,8,26,4);
-    ctx.fillStyle="#fff4cf";
-    ctx.fillRect(-10,-11,17,3);
+    // Additive light: black adds nothing; existing colors become brighter.
+    // Applies ONLY to the player stack, not the dungeon or enemies.
+    ctx.globalCompositeOperation = "source-over";
+    ctx.lineJoin = "miter";
+    ctx.lineWidth = cfg.strokeWidth;
+    ctx.shadowColor = "#00eaff";
+    ctx.shadowBlur = cfg.glowBlur;
+
+    // Draw both negative and positive z in the SAME source canvas.
+    // Thus -z is not occluded by the ground plane (which was drawn earlier).
+    // The complete composite is then warped by the existing fisheye shader.
+    for (let z = -levels; z <= levels; z++) {
+        const depth = Math.abs(z);
+        const size = cfg.groundSize * Math.pow(cfg.sizeFalloff, depth);
+        const offset = z * cfg.yPixelsPerLevel * (1 + depth * cfg.perspectivePerLevel);
+        const shimmer = ((frame + depth) % 2 === 0) ? 1 : 0.74;
+        // Every slice rotates independently, but all use the same 200 ms clock.
+        // Alternating direction and non-identical angular speeds create a
+        // layered, interlocking motion rather than one rigid rotating column.
+        const direction = z % 2 === 0 ? 1 : -1;
+        const speed = 1 + depth * 0.22 + (z < 0 ? 0.12 : 0);
+        const angle = frame * cfg.rotationStep * direction * speed
+            + z * Math.PI / 16;
+        ctx.save();
+        ctx.translate(x, y - offset);
+        ctx.rotate(angle);
+        ctx.globalAlpha = shimmer * (z === 0 ? 0.96 : 0.78);
+        ctx.strokeStyle = z < 0 ? "#777bff" : z > 0 ? "#5cecff" : "#ffffff";
+        ctx.strokeRect(-size / 2, -size / 2, size, size);
+        if (z !== 0) {
+            const mark = Math.min(3, size * 0.22);
+            ctx.beginPath();
+            ctx.moveTo(-size / 2, -size / 2 + mark);
+            ctx.lineTo(-size / 2, -size / 2);
+            ctx.lineTo(-size / 2 + mark, -size / 2);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
     ctx.restore();
 }
 
@@ -3635,7 +3802,7 @@ function drawPlayer() {
 
 function updateHUD() {
     statsElement.textContent =
-        `BUNKER ${bunker} | CORPSES ${player.corpses}`;
+        `${stageName.toUpperCase()} ${bunker} | CORPSES ${player.corpses}`;
 
     levelElement.textContent =
         `LVL ${player.level}`;
@@ -3741,6 +3908,9 @@ function animationLoop(timestamp) {
     }
 
     processHeldTab(timestamp);
+    processRealTimeEnemies(timestamp);
+    processCocytusEnemies(timestamp);
+    processIceMomentum(timestamp);
 
     if (autoExploring) {
         processFastAutoExplore();
@@ -3782,6 +3952,7 @@ function animationLoop(timestamp) {
     // HUD updates only when the actual displayed data changes.
     const hudState = [
         bunker,
+        stageName,
         player.corpses,
         player.level,
         player.attack,
@@ -3815,7 +3986,12 @@ function restartGame() {
     stopAutoExplore(false);
 
     bunker = 1;
+    stageName = "Delphi";
+    iceMomentum=null;
+    lastCainaTick=lastAntenoraTick=-1;
     turn = 0;
+    lastEnemyTick = -1;
+    lastRazorTick = -1;
     gameOver = false;
     resetCombo();
     player = null;
@@ -3846,6 +4022,15 @@ const MOVEMENT_KEYS = {
     arrowright: [1, 0]
 };
 
+const RESTART_HOLD_MS = 550;
+let restartHoldTimer = null;
+let restartHoldTriggered = false;
+function clearRestartHold() {
+    if (restartHoldTimer !== null) clearTimeout(restartHoldTimer);
+    restartHoldTimer = null;
+    restartHoldTriggered = false;
+}
+
 document.addEventListener("keydown", event => {
     const key = event.key.toLowerCase();
 
@@ -3856,6 +4041,19 @@ document.addEventListener("keydown", event => {
         key === "tab"
     ) {
         event.preventDefault();
+    }
+
+    // Hold R for 550 ms to restart, even after game over.
+    if (key === "r") {
+        event.preventDefault();
+        if (gameStarted && !event.repeat && !restartHoldTimer && !restartHoldTriggered) {
+            restartHoldTimer = setTimeout(() => {
+                restartHoldTimer = null;
+                restartHoldTriggered = true;
+                restartGame();
+            }, RESTART_HOLD_MS);
+        }
+        return;
     }
 
     // Ignore game controls on character selection.
@@ -3895,25 +4093,20 @@ document.addEventListener("keydown", event => {
         return;
     }
 
-    // Descend to the next bunker.
+    // Warp to the next randomly selected stage.
     if (key === "enter" && isOnStairs()) {
         stopAutoExplore(false);
 
         bunker++;
+        // Guarantee the player sees Cocytus on stage 2; later stages are random.
+        stageName = bunker === 2 ? "Cocytus" : (Math.random() < 0.5 ? "Delphi" : "Cocytus");
+        lastCainaTick=lastAntenoraTick=-1;
         generateDungeon();
         return;
     }
 
-    // Wait one turn.
-    if (key === " ") {
-        stopAutoExplore(false);
-
-        processEnemyTurn();
-
-        turn++;
-        render();
-        return;
-    }
+    // Space no longer advances enemy turns.
+    if (key === " ") return;
 
     // Manual movement.
     if (MOVEMENT_KEYS[key]) {
@@ -3922,12 +4115,13 @@ document.addEventListener("keydown", event => {
 });
 
 document.addEventListener("keyup", event => {
+    if (event.key.toLowerCase() === "r") clearRestartHold();
     if (event.key.toLowerCase() === "tab") {
         tabHeld = false;
         tabNextTick = null;
     }
 });
-window.addEventListener("blur", () => { tabHeld = false; tabNextTick = null; });
+window.addEventListener("blur", () => { tabHeld = false; tabNextTick = null; clearRestartHold(); });
 
 // ============================================================
 // 24. INITIALIZATION
