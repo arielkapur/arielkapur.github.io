@@ -20,6 +20,7 @@ A small digital archive for independent games, music, weather / mathematical sof
 - **portfolio.css** contains the responsive design and all original illustrative card art (CSS / inline SVG in the page).
 - **portfolio.js** provides filter tabs, the contrast-mode toggle, and an optional playful signal generator. No build step required.
 - **portfolio-icon.svg** is the site favicon.
+- **404.html** is the custom missing-page design; **sitemap.xml** works with the existing **robots.txt** to make both public routes discoverable.
 - **opus/index.html** preserves the previous home page as a playable OPUS route. OPUS still loads its original **/game.js**, **/style.css** and **/resources/** from the root of the repository. Keep these files in place.
 - The original **terraformer_guide.html**, transitions, and other existing resources remain untouched.
 - External content is linked, not scraped, imported, or automatically played.
