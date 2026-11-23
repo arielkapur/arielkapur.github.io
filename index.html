@@ -1,131 +1,150 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OPUS</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f1e8">
+  <meta name="description" content="The digital archive of Ariel Kapur: independent games, electronic music, physical systems, and strange little experiments.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Ariel Kapur — A Personal Internet">
+  <meta property="og:description" content="Games, music, code, and things that don't have a name yet.">
+  <meta property="og:url" content="https://arielkapur.github.io/">
+  <link rel="canonical" href="https://arielkapur.github.io/">
+  <title>ARIEL KAPUR // A PERSONAL INTERNET</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portfolio.css">
+  <link rel="icon" href="/portfolio-icon.svg" type="image/svg+xml">
+  <script defer src="/portfolio.js"></script>
 </head>
-
 <body>
-    <main id="game-container">
+  <a class="skip-link" href="#work">SKIP TO WORK</a>
+  <div class="top-strip" aria-hidden="true">
+    <span>✳ SIGNAL RECEIVED</span><span>✦ ARCHIVE TERMINAL 001 ✦</span><span>INDEPENDENT INTERNET HABITAT</span>
+  </div>
+  <div class="site">
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Ariel Kapur, homepage">
+        <span class="brand-mark" aria-hidden="true">◉</span>
+        <span>ARIEL<span class="brand-split">/</span>KAPUR<span class="brand-dot">.NET*</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#work">WORKS <span>↘</span></a>
+        <a href="#music">SOUNDS <span>↗</span></a>
+        <a href="#about">ABOUT <span>↘</span></a>
+        <a class="nav-external" href="https://github.com/arielkapur" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+      </nav>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle contrast mode" aria-pressed="false"><span aria-hidden="true">◐</span> SWITCH</button>
+    </header>
 
-
-<!-- Character selection: shown before a run begins -->
-<section id="character-select" class="selection-screen">
-    <div class="selection-content">
-        <h1>OPUS</h1>
-        <p class="selection-subtitle">SELECT YOUR CHARACTER</p>
-
-        <div id="character-grid" class="character-grid">
-            <button id="select-armada" class="character-card">
-                <span class="character-portrait">A</span>
-                <strong>ARMADA</strong>
-                <span>STARTING WEAPON</span>
-                <span class="weapon-name">USP-S</span>
-                <span class="character-status">AVAILABLE</span>
-            </button>
-
-            <!-- Reserved for future characters -->
-            <div id="locked-characters" class="locked-characters"></div>
+    <main>
+      <section class="hero section-frame" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="live-dot"></span> PERSONAL WEBSITE / CHANNEL OPEN</div>
+          <h1 id="hero-title">I MAKE<br><em>STRANGE</em><br>THINGS<span class="hero-period">.</span></h1>
+          <p class="hero-intro">HELLO, INTERNET. I'M ARIEL. I MAKE GAMES, MUSIC, MAPS &amp; EXPERIMENTS ON COMPUTERS. THIS IS WHERE I KEEP THE INTERESTING ONES.</p>
+          <div class="hero-actions">
+            <a class="button-primary" href="#work">ENTER THE ARCHIVE <span aria-hidden="true">↘</span></a>
+            <a class="button-quiet" href="https://arielkapur.bandcamp.com/" target="_blank" rel="noopener noreferrer">LISTEN TO THE MUSIC ↗</a>
+          </div>
+          <div class="hero-coordinates"><span>LOC: THE INTERNET</span><span>EST. 2026</span><span>ALWAYS UNDER CONSTRUCTION</span></div>
         </div>
-
-        <p class="selection-footer">
-            SELECT A CHARACTER TO BEGIN
-        </p>
-    </div>
-</section>
-
-
-        <canvas id="game"></canvas>
-        
-<!-- Mouse-following aiming reticle -->
-<div id="aim-reticle" aria-hidden="true">
-    <div class="reticle-circle"></div>
-    <div class="reticle-dot"></div>
-    <div class="reticle-mark mark-top"></div>
-    <div class="reticle-mark mark-right"></div>
-    <div class="reticle-mark mark-bottom"></div>
-    <div class="reticle-mark mark-left"></div>
-</div>
-
-
-        <!-- Top-left: bunker and kill statistics -->
-        <section id="character-info">
-            <div id="stats">BUNKER 1 | KILLS 0</div>
-        </section>
-
-        <!-- Top-right: player status -->
-        <section id="player-hud">
-            <div class="hud-heading">
-                <span id="level">LVL 1</span>
-                <span id="hp-text">20 / 20 HP</span>
-            </div>
-
-            <div class="hp-bar">
-                <div id="hp-fill" class="hp-fill"></div>
-            </div>
-
-            <div class="xp-heading">
-                <span>EXPERIENCE</span>
-                <span id="xp-text">0 / 5 XP</span>
-            </div>
-
-            <div class="xp-bar">
-                <div id="xp-fill" class="xp-fill"></div>
-            </div>
-
-            <div id="attack-stat">ATK 3</div>
-        </section>
-
-        <!-- Floating enemy interaction indicators -->
-        <div id="popup-layer"></div>
-
-        <!-- Staircase interaction prompt -->
-        <div id="stairs-prompt" class="hidden">
-            Press <span>ENTER</span> to descend.
+        <div class="hero-art" role="img" aria-label="Original abstract illustration of a floating geometric organism orbiting a bright green nucleus">
+          <div class="hero-art-head"><span>FIG. 001</span><span>UNKNOWN SPECIMEN / AK-01</span></div>
+          <svg class="specimen" viewBox="0 0 600 600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="planet" cx=".37" cy=".24" r=".8"><stop offset="0" stop-color="#fbffb0"/><stop offset=".35" stop-color="#caff22"/><stop offset=".78" stop-color="#7bbd16"/><stop offset="1" stop-color="#164d27"/></radialGradient>
+              <linearGradient id="petal" x1="0" x2="1" y1=".1" y2="1"><stop stop-color="#e0dfff"/><stop offset=".5" stop-color="#9276ef"/><stop offset="1" stop-color="#372477"/></linearGradient>
+              <linearGradient id="orange" x1="0" x2="1"><stop stop-color="#ffdf9c"/><stop offset="1" stop-color="#ff6f53"/></linearGradient>
+              <filter id="shadow"><feDropShadow dx="2" dy="12" stdDeviation="12" flood-opacity=".2"/></filter>
+            </defs>
+            <circle cx="300" cy="300" r="245" fill="none" stroke="#151515" stroke-opacity=".16" stroke-dasharray="3 12"/>
+            <circle cx="300" cy="300" r="200" fill="none" stroke="#151515" stroke-opacity=".20"/>
+            <circle cx="300" cy="300" r="157" fill="none" stroke="#151515" stroke-opacity=".14" stroke-dasharray="2 9"/>
+            <g class="orbital">
+              <path d="M300 111 C375 40 453 130 420 216 C515 203 570 310 477 364 C520 445 427 537 338 481 C264 570 155 499 175 411 C71 391 62 275 161 239 C119 148 207 69 300 111 Z" fill="url(#petal)" stroke="#231632" stroke-width="3" filter="url(#shadow)"/>
+              <path d="M300 137 C355 97 405 159 388 222 C472 223 503 305 434 344 C468 406 406 477 330 449 C266 509 188 459 204 390 C130 370 128 284 194 257 C164 179 223 114 300 137 Z" fill="#f9f3e3" stroke="#281f37" stroke-width="3"/>
+              <path d="M300 138 Q317 206 388 222 Q322 242 434 344 Q343 326 330 449 Q294 352 204 390 Q254 319 194 257 Q275 260 300 138Z" fill="#facbb6" opacity=".62"/>
+              <circle cx="300" cy="300" r="110" fill="url(#planet)" stroke="#172316" stroke-width="5"/>
+              <ellipse cx="261" cy="260" rx="29" ry="14" transform="rotate(-35 261 260)" fill="#fff" opacity=".52"/>
+              <circle cx="269" cy="293" r="11" fill="#171718"/><circle cx="329" cy="293" r="11" fill="#171718"/>
+              <path d="M274 342 Q300 359 328 342" fill="none" stroke="#1f2a1b" stroke-width="7" stroke-linecap="round"/>
+            </g>
+            <g fill="#ff704e" stroke="#1b1b1b" stroke-width="3"><circle cx="98" cy="160" r="19"/><circle cx="492" cy="467" r="14"/></g>
+            <g fill="#121212"><path d="M484 101h10v10h-10zM490 96h10v10h-10z"/><path d="M119 474h27v4h-27zM130 463h4v27h-4z"/></g>
+            <g fill="#fff" stroke="#222" stroke-width="2"><path d="m476 210 18-23 6 31-23 15z"/><path d="m153 350-16 16-11-22 18-14z"/></g>
+            <text x="28" y="580" font-family="monospace" font-size="13" fill="#252525">IMAGINARY LIFEFORM / NOT TO SCALE</text>
+          </svg>
+          <div class="hero-art-foot"><span>THE UNKNOWN IS UNDER ACTIVE DEVELOPMENT</span><span>✴</span></div>
         </div>
+      </section>
 
-        <!-- Bottom-left event log -->
-        <section id="chat-container">
-            <div id="chat-log" aria-live="polite"></div>
-        </section>
+      <div class="ticker" aria-hidden="true"><div class="ticker-track">✳ WELCOME TO MY LITTLE CORNER OF THE INTERNET &nbsp; ✦ &nbsp; GAMES / SOUND / SIMULATIONS / UNFINISHED IDEAS &nbsp; ✳ &nbsp; NOTHING HERE IS FINAL &nbsp; ✦ &nbsp; WELCOME TO MY LITTLE CORNER OF THE INTERNET &nbsp; ✦ &nbsp; GAMES / SOUND / SIMULATIONS / UNFINISHED IDEAS &nbsp; ✳ &nbsp; NOTHING HERE IS FINAL &nbsp; ✦ &nbsp;</div></div>
 
-<!-- Bottom-right controls -->
-<section id="controls">
-    <div>WASD / ARROWS — MOVE</div>
-    <div>MOUSE — AIM</div>
-    <div>LEFT CLICK — FIRE</div>
-    <div>TAB — AUTO ACTION</div>
-    <div>O — AUTO EXPLORE</div>
-    <div>SPACE — WAIT</div>
-    <div>ENTER — DESCEND</div>
-</section>]
-</section>
+      <section id="work" class="archive-section" aria-labelledby="work-title">
+        <div class="section-topline"><span>01 / THE ARCHIVE</span><span>EXPLORE THE SYSTEM</span></div>
+        <div class="archive-heading">
+          <div><div class="little-label">✦ SELECTED OBJECTS &amp; EXPERIENCES</div><h2 id="work-title">WORKS<span class="asterisk">✳</span></h2></div>
+          <p>NOT A RESUME. MORE LIKE A CABINET OF CURIOSITIES THAT HAPPENS TO HAVE A GITHUB ACCOUNT.</p>
+        </div>
+        <div class="filters" role="group" aria-label="Filter projects">
+          <button type="button" class="filter is-active" data-filter="all" aria-pressed="true">ALL <span>04</span></button>
+          <button type="button" class="filter" data-filter="games" aria-pressed="false">GAMES <span>02</span></button>
+          <button type="button" class="filter" data-filter="systems" aria-pressed="false">SYSTEMS <span>02</span></button>
+        </div>
+        <div class="work-grid" id="work-grid">
+          <article class="work-card" data-category="games">
+            <div class="work-cover cover-opus">
+              <div class="cover-top"><span>GAME FILE / 001</span><span>LIVE PROTOTYPE</span></div>
+              <div class="opus-orbit" aria-hidden="true"><div class="opus-orbit-inner"><div class="opus-core">✧</div></div><span class="opus-spark a">✦</span><span class="opus-spark b">✳</span></div>
+              <span class="cover-title opus-name">OPUS<span>_</span></span><span class="cover-caption">A SMALL UNIVERSE IN A BROWSER</span>
+            </div>
+            <div class="work-information"><div class="project-index">001 / GAME DEVELOPMENT <span class="status-chip">PLAYABLE</span></div><h3>OPUS <span>↗</span></h3><p>A browser-based roguelike experiment: exploration, character progression, a deliberately sharp arcade interface, and a world that keeps growing.</p><div class="project-meta"><span>JAVASCRIPT</span><span>CANVAS</span><span>WEB GAME</span></div><div class="project-actions"><a class="project-link" href="/opus/">PLAY OPUS ↗</a><a class="project-link secondary" href="https://github.com/arielkapur/arielkapur.github.io" target="_blank" rel="noopener noreferrer">SOURCE ↗</a></div></div>
+          </article>
+          <article class="work-card" data-category="games">
+            <div class="work-cover cover-world">
+              <div class="cover-top"><span>GAME FILE / 002</span><span>NETWORK WORLD</span></div>
+              <div class="world-horizon" aria-hidden="true"><span class="world-moon"></span><span class="world-mountain one"></span><span class="world-mountain two"></span><span class="world-mountain three"></span><span class="world-grid"></span></div>
+              <span class="cover-title world-name">FUCK<span>/</span>WORLD</span><span class="cover-caption">UNKNOWN TERRITORY / WORLD 001</span>
+            </div>
+            <div class="work-information"><div class="project-index">002 / GAME DEVELOPMENT <span class="status-chip">EXPERIMENTAL</span></div><h3>FUCK / WORLD 001 <span>↗</span></h3><p>An experimental multiplayer 3D landscape built with Three.js and WebSockets. Wander, discover the map, and explore a strange unfinished place together.</p><div class="project-meta"><span>THREE.JS</span><span>NODE.JS</span><span>WEBSOCKETS</span></div><div class="project-actions"><a class="project-link" href="https://fuck-world.onrender.com/" target="_blank" rel="noopener noreferrer">ENTER WORLD ↗</a><a class="project-link secondary" href="https://github.com/arielkapur/fuck" target="_blank" rel="noopener noreferrer">SOURCE ↗</a></div><p class="tiny-note">NOTE: THE FREE HOST MAY TAKE A MOMENT TO WAKE UP.</p></div>
+          </article>
+          <article class="work-card" data-category="systems">
+            <div class="work-cover cover-sky">
+              <div class="cover-top"><span>INSTRUMENT / 003</span><span>ATMOSPHERIC DATA</span></div>
+              <div class="sky-weather" aria-hidden="true"><span class="sky-ring r1"></span><span class="sky-ring r2"></span><span class="sky-ring r3"></span><span class="sky-cloud c1"></span><span class="sky-cloud c2"></span><span class="sky-point">✳</span></div>
+              <span class="cover-title sky-name">SKY<br>SYNOPTIC</span><span class="cover-caption">LOOK UP / LOOK CLOSER</span>
+            </div>
+            <div class="work-information"><div class="project-index">003 / SCIENTIFIC SOFTWARE <span class="status-chip">IN DEVELOPMENT</span></div><h3>SKYSYNOPTIC <span>↗</span></h3><p>A weather-map application exploring forecast fields, pressure contours and real NOAA GFS data, with a native macOS packaging workflow in progress.</p><div class="project-meta"><span>PYTHON</span><span>NOAA GFS</span><span>MACOS</span></div><div class="project-actions"><a class="project-link" href="https://github.com/arielkapur/skynapse" target="_blank" rel="noopener noreferrer">EXPLORE PROJECT ↗</a></div><p class="tiny-note">SOURCE PROJECT — NOT YET A VERIFIED SIGNED MAC APP.</p></div>
+          </article>
+          <article class="work-card" data-category="systems">
+            <div class="work-cover cover-neural">
+              <div class="cover-top"><span>RESEARCH NOTE / 004</span><span>MATHEMATICAL SYSTEM</span></div>
+              <svg class="neural-drawing" viewBox="0 0 500 290" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g stroke="#e2ff8b" stroke-width="2" opacity=".8"><path d="M70 110 191 47 275 130 420 55M70 110 190 226 275 130 418 237M191 47 190 226 420 55 418 237M70 110 275 130 418 237M191 47 418 237"/></g><g fill="#c5f84f" stroke="#121b20" stroke-width="5"><circle cx="70" cy="110" r="18"/><circle cx="191" cy="47" r="18"/><circle cx="190" cy="226" r="18"/><circle cx="275" cy="130" r="29"/><circle cx="420" cy="55" r="18"/><circle cx="418" cy="237" r="18"/></g></svg>
+              <span class="cover-title neural-name">ARK_<br>NEURAL.NET</span><span class="cover-caption">TEACHING A COMPUTER MATH</span>
+            </div>
+            <div class="work-information"><div class="project-index">004 / CODE EXPERIMENT <span class="status-chip">EXPLORATORY</span></div><h3>ARK NEURAL NET <span>↗</span></h3><p>A personal learning experiment at the intersection of mathematics, vectors, and computation. An evolving notebook more than a finished product.</p><div class="project-meta"><span>PYTHON</span><span>MATH</span><span>EXPERIMENT</span></div><div class="project-actions"><a class="project-link" href="https://github.com/arielkapur/ark-neural-net" target="_blank" rel="noopener noreferrer">OPEN NOTEBOOK ↗</a></div></div>
+          </article>
+        </div>
+        <div id="filter-empty" class="filter-empty" hidden>NO ARTIFACTS IN THIS FREQUENCY.</div>
+        <div class="archive-tail"><span>END OF SELECTED WORKS / MORE MAY MATERIALISE</span><a href="https://github.com/arielkapur?tab=repositories" target="_blank" rel="noopener noreferrer">VIEW ALL GITHUB REPOSITORIES ↗</a></div>
+      </section>
 
-<!-- Bottom-right equipped weapon -->
-<section id="weapon-hud" class="hidden">
-    <div class="weapon-label">EQUIPPED WEAPON</div>
-    <div id="weapon-name">USP-S</div>
+      <section id="music" class="music-section section-frame" aria-labelledby="music-title">
+        <div class="music-copy"><div class="section-topline"><span>02 / SONIC MATERIAL</span><span>HEADPHONES SUGGESTED</span></div><div class="little-label">✳ SOUNDS FROM ANOTHER ROOM</div><h2 id="music-title">MUSIC IS<br>PART OF THE <i>MACHINE.</i></h2><p>I ALSO MAKE MUSIC. SONGS, TEXTURES, NOISE, MELODIES, AND OTHER THINGS I DON'T REALLY KNOW HOW TO LABEL. THE RECORDS LIVE AT BANDCAMP.</p><a class="button-dark" href="https://arielkapur.bandcamp.com/" target="_blank" rel="noopener noreferrer">ARIEL KAPUR ON BANDCAMP <span>↗</span></a><div class="music-note">NO AUTOPLAY. YOU DECIDE WHAT TO LISTEN TO. ♫</div></div>
+        <div class="music-object" role="img" aria-label="Abstract original graphic of a luminous violet record surrounded by playful neon shapes"><div class="record-ring"><div class="record-disc"><div class="record-center">AK<br>♫</div></div></div><span class="music-bubble b1">♪</span><span class="music-bubble b2">✺</span><span class="music-bubble b3">♫</span><span class="record-label">FIG. 002 / AN AUDIBLE OBJECT</span></div>
+      </section>
 
-    <div class="ammo-display">
-        <span id="ammo-current">15</span>
-        <span class="ammo-divider">/</span>
-        <span id="ammo-reserve">∞</span>
-    </div>
+      <section id="about" class="about-section" aria-labelledby="about-title">
+        <div class="section-topline"><span>03 / TRANSMISSION FROM THE AUTHOR</span><span>OPEN LETTER / SORT OF</span></div>
+        <div class="about-layout"><div><div class="little-label">A SMALL MANIFESTO</div><h2 id="about-title">WHAT IS<br>ALL THIS <em>FOR?</em></h2><div class="about-star" aria-hidden="true">✳</div></div><div class="about-body"><p>I'M INTERESTED IN SYSTEMS: THE ONES WE INVENT, THE ONES WE DISCOVER, AND THE ONES WE CAN TURN INTO SOMETHING YOU CAN ACTUALLY EXPERIENCE.</p><p>SOMETIMES THAT MEANS A GAME. SOMETIMES IT MEANS A WEATHER MAP, A LINE OF CODE, OR A PIECE OF MUSIC.</p><p>THIS WEBSITE IS AN ARCHIVE, NOT A FINISHED STATEMENT. THERE WILL BE BUGS, ODD DETOURS, AND NEW OBJECTS.</p><div class="about-signature">— ARIEL KAPUR / FROM SOMEWHERE ON EARTH</div></div></div>
+      </section>
 
-    <div id="weapon-status">READY</div>
-</section>
-
-
+      <section class="notice-section" aria-labelledby="notice-title"><div class="notice-head"><span>✷ NOTICEBOARD / LIVE DOCUMENT</span><span>NO. 001</span></div><div class="notice-grid"><div><h2 id="notice-title">CURRENTLY<br>TRANSMITTING</h2><p>THIS PART IS A WINDOW INTO THE WORKSHOP, NOT A PROMISE OF A RELEASE DATE.</p></div><div class="notice-feed"><div class="notice-row"><span>01</span><div><strong>OPUS</strong><p>A PLAYABLE CANVAS GAME, PRESERVED IN THE ARCHIVE.</p></div><span>PLAYABLE</span></div><div class="notice-row"><span>02</span><div><strong>FUCK / WORLD</strong><p>A MULTIPLAYER BROWSER-WORLD PROTOTYPE.</p></div><span>EXPERIMENTAL</span></div><div class="notice-row"><span>03</span><div><strong>SKYSYNOPTIC</strong><p>MACOS PACKAGING AND WEATHER-DATA DEVELOPMENT.</p></div><span>IN PROGRESS</span></div></div></div></section>
+      <section class="closing" aria-label="Closing message"><p>YOU HAVE REACHED THE EDGE OF THE KNOWN WEBSITE.</p><div class="signal-play"><span>GENERATE AN UNNECESSARY TRANSMISSION</span><button type="button" id="signal-button">✳ TRANSMIT</button></div><div id="signal-output" class="signal-output" aria-live="polite">[ THE FUTURE IS STILL LOADING ]</div></section>
     </main>
-
-    <script src="game.js"></script>
+    <footer class="footer"><a class="footer-logo" href="/">AK<span>✳</span></a><div>INDEPENDENTLY MADE ON THE INTERNET.<br>© <span id="current-year">2026</span> ARIEL KAPUR.</div><div class="footer-links"><a href="#work">TOP OF ARCHIVE ↑</a><a href="https://arielkapur.bandcamp.com/" target="_blank" rel="noopener noreferrer">BANDCAMP ↗</a><a href="https://github.com/arielkapur" target="_blank" rel="noopener noreferrer">GITHUB ↗</a></div></footer>
+  </div>
 </body>
 </html>

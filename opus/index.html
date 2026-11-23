@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPUS — Ariel Kapur</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <main id="game-container">
+
+
+<!-- Character selection: shown before a run begins -->
+<section id="character-select" class="selection-screen">
+    <div class="selection-content">
+        <h1>OPUS</h1>
+        <p class="selection-subtitle">SELECT YOUR CHARACTER</p>
+
+        <div id="character-grid" class="character-grid">
+            <button id="select-armada" class="character-card">
+                <span class="character-portrait">A</span>
+                <strong>ARMADA</strong>
+                <span>STARTING WEAPON</span>
+                <span class="weapon-name">USP-S</span>
+                <span class="character-status">AVAILABLE</span>
+            </button>
+
+            <!-- Reserved for future characters -->
+            <div id="locked-characters" class="locked-characters"></div>
+        </div>
+
+        <p class="selection-footer">
+            SELECT A CHARACTER TO BEGIN
+        </p>
+    </div>
+</section>
+
+
+        <canvas id="game"></canvas>
+        
+<!-- Mouse-following aiming reticle -->
+<div id="aim-reticle" aria-hidden="true">
+    <div class="reticle-circle"></div>
+    <div class="reticle-dot"></div>
+    <div class="reticle-mark mark-top"></div>
+    <div class="reticle-mark mark-right"></div>
+    <div class="reticle-mark mark-bottom"></div>
+    <div class="reticle-mark mark-left"></div>
+</div>
+
+
+        <!-- Top-left: bunker and kill statistics -->
+        <section id="character-info">
+            <div id="stats">BUNKER 1 | KILLS 0</div>
+        </section>
+
+        <!-- Top-right: player status -->
+        <section id="player-hud">
+            <div class="hud-heading">
+                <span id="level">LVL 1</span>
+                <span id="hp-text">20 / 20 HP</span>
+            </div>
+
+            <div class="hp-bar">
+                <div id="hp-fill" class="hp-fill"></div>
+            </div>
+
+            <div class="xp-heading">
+                <span>EXPERIENCE</span>
+                <span id="xp-text">0 / 5 XP</span>
+            </div>
+
+            <div class="xp-bar">
+                <div id="xp-fill" class="xp-fill"></div>
+            </div>
+
+            <div id="attack-stat">ATK 3</div>
+        </section>
+
+        <!-- Floating enemy interaction indicators -->
+        <div id="popup-layer"></div>
+
+        <!-- Staircase interaction prompt -->
+        <div id="stairs-prompt" class="hidden">
+            Press <span>ENTER</span> to descend.
+        </div>
+
+        <!-- Bottom-left event log -->
+        <section id="chat-container">
+            <div id="chat-log" aria-live="polite"></div>
+        </section>
+
+<!-- Bottom-right controls -->
+<section id="controls">
+    <div>WASD / ARROWS — MOVE</div>
+    <div>MOUSE — AIM</div>
+    <div>LEFT CLICK — FIRE</div>
+    <div>TAB — AUTO ACTION</div>
+    <div>O — AUTO EXPLORE</div>
+    <div>SPACE — WAIT</div>
+    <div>ENTER — DESCEND</div>
+</section>]
+</section>
+
+<!-- Bottom-right equipped weapon -->
+<section id="weapon-hud" class="hidden">
+    <div class="weapon-label">EQUIPPED WEAPON</div>
+    <div id="weapon-name">USP-S</div>
+
+    <div class="ammo-display">
+        <span id="ammo-current">15</span>
+        <span class="ammo-divider">/</span>
+        <span id="ammo-reserve">∞</span>
+    </div>
+
+    <div id="weapon-status">READY</div>
+</section>
+
+
+    </main>
+
+    <script src="game.js"></script>
+</body>
+</html>
