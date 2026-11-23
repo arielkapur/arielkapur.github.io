@@ -36,7 +36,7 @@ Then visit http://localhost:8000/ and http://localhost:8000/opus/.
 
 ### Updating the portfolio
 
-To change project descriptions, cards, or links, edit **index.html**. Cards use \`data-category="games"\` or \`data-category="systems"\` so the category filters work automatically. Update the displayed filter totals if you add cards. Edit the project status only when verified.
+To change project descriptions, cards, or links, edit **index.html**. Cards use `data-category="games"` or `data-category="systems"` so the category filters work automatically. Update the displayed filter totals if you add cards. Edit the project status only when verified.
 
 ### Accessibility and performance
 
@@ -44,7 +44,7 @@ The site supports keyboards, sensible headings, responsive layouts, reduced-moti
 
 ## Deployment note
 
-This repository is named as a GitHub Pages user site. If Pages is configured to deploy from the \`main\` branch root, **merging the portfolio PR** makes the home page live. A feature branch alone does not publish it. Verify GitHub **Settings → Pages** if deployment does not occur.
+This repository is named as a GitHub Pages user site. If Pages is configured to deploy from the `main` branch root, **merging the portfolio PR** makes the home page live. A feature branch alone does not publish it. Verify GitHub **Settings → Pages** if deployment does not occur.
 
 ## Current limitations
 
