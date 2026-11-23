@@ -8,7 +8,7 @@ A small digital archive for independent games, music, weather / mathematical sof
 
 | Project | What it is | Where it lives |
 |---|---|---|
-| **OPUS** | Browser-based canvas roguelike prototype | [Play](/opus/) · [Source](https://github.com/arielkapur/arielkapur.github.io) |
+| **OPUS** | Browser-based canvas roguelike prototype | [Play](https://arielkapur.github.io/opus/) · [Source](https://github.com/arielkapur/arielkapur.github.io) |
 | **FUCK / WORLD 001** | Experimental multiplayer 3D environment | [Play](https://fuck-world.onrender.com/) · [Source](https://github.com/arielkapur/fuck) |
 | **SkySynoptic** | NOAA GFS weather map / macOS app packaging in progress | [Source](https://github.com/arielkapur/skynapse) |
 | **Ark Neural Net** | Mathematics/computation learning experiment | [Source](https://github.com/arielkapur/ark-neural-net) |
