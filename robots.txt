@@ -1,4 +1,7 @@
+# Search crawlers: portfolio and playable OPUS are public.
 User-agent: *
 Allow: /
-
+# Skip old source dumps, not public pages.
+Disallow: /Obselete%20JS%20functions
+Disallow: /game_0.1
 Sitemap: https://arielkapur.github.io/sitemap.xml

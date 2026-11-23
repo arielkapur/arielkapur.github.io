@@ -18,19 +18,6 @@
     if (empty) empty.hidden = visible !== 0;
   };
   filters.forEach((button) => button.addEventListener("click", () => applyFilter(button.dataset.filter)));
-  const contrast = document.getElementById("theme-toggle");
-  try {
-    if (localStorage.getItem("ak-archive-contrast") === "dark") document.body.classList.add("dark");
-  } catch (_) {}
-  const updateContrast = () => {
-    if (contrast) contrast.setAttribute("aria-pressed", String(document.body.classList.contains("dark")));
-  };
-  updateContrast();
-  if (contrast) contrast.addEventListener("click", () => {
-    document.body.classList.toggle("dark");
-    updateContrast();
-    try { localStorage.setItem("ak-archive-contrast", document.body.classList.contains("dark") ? "dark" : "light"); } catch (_) {}
-  });
   const signals = [
     "[ SIGNAL FOUND IN AN ABANDONED ORBIT ]",
     "[ A NEW WORLD HAS FAILED SUCCESSFULLY ]",
