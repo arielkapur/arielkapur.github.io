@@ -41,15 +41,15 @@ To change project descriptions, cards, or links, edit **index.html**. Cards use 
 
 ### Accessibility and performance
 
-The site supports keyboards, sensible headings, responsive layouts, reduced-motion settings, meaningful controls, and no autoplay audio. The core content renders without JavaScript. Typography has local fallbacks; fonts are optional Google Fonts requests.
+The site supports keyboards, sensible headings, responsive layouts, reduced-motion settings, meaningful controls, and no autoplay audio. The core content renders without JavaScript. Chomsky and the original DeiGrat wordmark use external webfont URLs with system fallbacks; Classique Script subheadings are outlined SVG lettering rather than redistributed font files.
 
 ## Deployment note
 
-This repository is named as a GitHub Pages user site. If Pages is configured to deploy from the `main` branch root, **merging the portfolio PR** makes the home page live. A feature branch alone does not publish it. Verify GitHub **Settings → Pages** if deployment does not occur.
+This repository is named as a GitHub Pages user site. GitHub Pages deploys from `main` / root. Commits to `main` are deployed live through GitHub Actions; inspect the latest **pages build and deployment** run to verify status.
 
 ## Current limitations
 
-Project art is original **illustrative artwork**, not screenshots of gameplay. OPUS and FUCK / WORLD are prototypes, not finished releases. The Render-hosted world may sleep when idle. SkySynoptic's source-defined macOS build is not evidence of a successfully built, signed or notarised app. External links may change.
+Project art is original **illustrative artwork**, not screenshots of gameplay. OPUS and F*CK-WORLD are prototypes, not finished releases. The Render-hosted world may sleep when idle. SkySynoptic's source-defined macOS build is not evidence of a successfully built, signed or notarised app. External links may change.
 
 ## Future enhancements
 
@@ -62,7 +62,16 @@ Project art is original **illustrative artwork**, not screenshots of gameplay. O
 
 No assets or code are copied from Iglooghost.net.
 
+## Current design: a constellation (24 November 2026)
 
-## Live gothic visual direction
+- The page has generous margins around a centred 1260px column.
+- Neutral backgrounds and text range from #080808 to #efefef (RGB accent colours remain deliberately vivid).
+- The main titles use **Chomsky**, by Fredrick Brennan (OFL-1.1), via the maintainer's public distribution.
+- The centre-of-page `ariel kapur` wordmark references **DeiGrat**, found in this repository's *first July 2026 stylesheet*, through a historical repository asset. There is a fallback if historical font loading is blocked.
+- Three handwritten subheadings use **Classique Script**, embedded as reusable outlined SVG glyphs in `art/classique-subheadings.svg`. No original font binaries were uploaded.
+- The header places a small abstract icon between evenly balanced navigation links; there is no top-left name/logo.
+- Text echoes the earliest website's “my digital home”, “a constellation”, and “actual wizard trying to talk to rocks”, plus the mathematical-learning note from Ark Neural Net.
+- `robots.txt` preserves sitemap indexing and discourages crawler visits to obsolete source dumps.
+- The public game label remains **F*CK-WORLD**; source and game URLs are unchanged.
 
-The current portfolio uses black-and-white Gothic typography, strict RGB accents (`#00ff00`, `#0000ff`, `#ff0000`), a new thorned cybersigil, glow effects, and illustrated title art. The `art/` lettering SVGs are outlined from user-supplied Warsuck and Classique Script — no raw font files are redistributed. Editable text uses web-loaded blackletter/serif substitutes with offline fallbacks. The game is publicly labeled **F*CK-WORLD**, while its actual game and source URLs are unchanged. Changes were pushed straight to `main` for live iteration.
+The old site and earlier gothic treatments remain available through Git history. The site is updated directly on `main` for experimental iteration.
