@@ -61,3 +61,8 @@ Project art is original **illustrative artwork**, not screenshots of gameplay. O
 - Add original typographic / audio-reactive art that respects reduced-motion and no-autoplay preferences.
 
 No assets or code are copied from Iglooghost.net.
+
+
+## Live gothic visual direction
+
+The current portfolio uses black-and-white Gothic typography, strict RGB accents (`#00ff00`, `#0000ff`, `#ff0000`), a new thorned cybersigil, glow effects, and illustrated title art. The `art/` lettering SVGs are outlined from user-supplied Warsuck and Classique Script — no raw font files are redistributed. Editable text uses web-loaded blackletter/serif substitutes with offline fallbacks. The game is publicly labeled **F*CK-WORLD**, while its actual game and source URLs are unchanged. Changes were pushed straight to `main` for live iteration.
