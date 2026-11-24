@@ -75,3 +75,7 @@ No assets or code are copied from Iglooghost.net.
 - The public game label remains **F*CK-WORLD**; source and game URLs are unchanged.
 
 The old site and earlier gothic treatments remain available through Git history. The site is updated directly on `main` for experimental iteration.
+
+
+## Step 2 — ethereal grayscale
+The homepage is grayscale, including inline illustration colors, cards, links, and the favicon. Chomsky is confined to the four top navigation labels. Classique Script is rendered as visible inline outlined headings (my digital home, works, music, about) with accessible text, not an externally loaded SVG fragment. The music area has a Bandcamp release-player slot and a direct artist link. A release-specific official EmbeddedPlayer URL is required to activate playback; no ID is guessed. No autoplay.
