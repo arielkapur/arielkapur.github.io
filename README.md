@@ -79,3 +79,7 @@ The old site and earlier gothic treatments remain available through Git history.
 
 ## Step 2 — ethereal grayscale
 The homepage is grayscale, including inline illustration colors, cards, links, and the favicon. Chomsky is confined to the four top navigation labels. Classique Script is rendered as visible inline outlined headings (my digital home, works, music, about) with accessible text, not an externally loaded SVG fragment. The music area has a Bandcamp release-player slot and a direct artist link. A release-specific official EmbeddedPlayer URL is required to activate playback; no ID is guessed. No autoplay.
+
+
+## Step 3 — small, centred, unframed
+The homepage now has a single narrow column (560px maximum), small text, centred navigation and content, generous blank space, and no borders around cards, sections, or the outer canvas. The large decorative hero creature, project cover panels, ticker and duplicated noticeboard were removed. The four Classique Script headings, Chomsky navigation, grayscale palette, project links, filter controls and Bandcamp link are retained. The not-yet-configured player slot is hidden until a verified embed is provided. The 404 page follows the same visual direction. Game files are unchanged.
